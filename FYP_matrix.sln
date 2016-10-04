@@ -5,7 +5,7 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MatrixCreator", "FYP_matrix\FYP_matrix.vcxproj", "{15D87FC3-D1DA-46B9-968C-C6AB54F742CF}"
 EndProject
-Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "PC", "..\FYP_pc\FYP_pc\PC.pyproj", "{E2C9C666-BC36-4050-971A-8CE0FB7C8251}"
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "PcComponent", "pc_component\PcComponent.pyproj", "{E16FE710-7D03-46DB-87F1-E727326DDFA1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,10 +21,10 @@ Global
 		{15D87FC3-D1DA-46B9-968C-C6AB54F742CF}.Release|Any CPU.ActiveCfg = Release|ARM
 		{15D87FC3-D1DA-46B9-968C-C6AB54F742CF}.Release|ARM.ActiveCfg = Release|ARM
 		{15D87FC3-D1DA-46B9-968C-C6AB54F742CF}.Release|ARM.Build.0 = Release|ARM
-		{E2C9C666-BC36-4050-971A-8CE0FB7C8251}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E2C9C666-BC36-4050-971A-8CE0FB7C8251}.Debug|ARM.ActiveCfg = Debug|Any CPU
-		{E2C9C666-BC36-4050-971A-8CE0FB7C8251}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E2C9C666-BC36-4050-971A-8CE0FB7C8251}.Release|ARM.ActiveCfg = Release|Any CPU
+		{E16FE710-7D03-46DB-87F1-E727326DDFA1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E16FE710-7D03-46DB-87F1-E727326DDFA1}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{E16FE710-7D03-46DB-87F1-E727326DDFA1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E16FE710-7D03-46DB-87F1-E727326DDFA1}.Release|ARM.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

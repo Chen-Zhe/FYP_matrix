@@ -1,0 +1,113 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|ARM">
+      <Configuration>Debug</Configuration>
+      <Platform>ARM</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM">
+      <Configuration>Release</Configuration>
+      <Platform>ARM</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{15d87fc3-d1da-46b9-968c-c6ab54f742cf}</ProjectGuid>
+    <Keyword>Linux</Keyword>
+    <RootNamespace>FYP_matrix</RootNamespace>
+    <MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>
+    <ApplicationType>Linux</ApplicationType>
+    <ApplicationTypeRevision>1.0</ApplicationTypeRevision>
+    <TargetLinuxPlatform>Raspberry</TargetLinuxPlatform>
+    <LinuxProjectType>{8748239F-558C-44D1-944B-07B09C35B330}</LinuxProjectType>
+    <ProjectName>MatrixCreator</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'" Label="Configuration">
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'" Label="Configuration">
+    <UseDebugLibraries>false</UseDebugLibraries>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings" />
+  <ImportGroup Label="Shared" />
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
+    <RemoteCppCompileToolExe>g++</RemoteCppCompileToolExe>
+    <RemoteLdToolExe>g++</RemoteLdToolExe>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
+    <Link>
+      <LibraryDependencies>wiringPi</LibraryDependencies>
+    </Link>
+    <RemotePostBuildEvent>
+      <Command>gpio export 17 out</Command>
+      <Message>export pin 17 using the gpio utility so that we can execute the blink program without sudo</Message>
+    </RemotePostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
+    <Link>
+      <LibraryDependencies>wiringPi</LibraryDependencies>
+    </Link>
+    <RemotePostBuildEvent>
+      <Command>gpio export 17 out</Command>
+      <Message>export pin 17 using the gpio utility so that we can execute the blink program without sudo</Message>
+    </RemotePostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="libsocket\exception.cpp" />
+    <ClCompile Include="libsocket\framing.cpp" />
+    <ClCompile Include="libsocket\inetbase.cpp" />
+    <ClCompile Include="libsocket\inetclientstream.cpp" />
+    <ClCompile Include="libsocket\inetserverstream.cpp" />
+    <ClCompile Include="libsocket\libinetsocket.cpp" />
+    <ClCompile Include="libsocket\select.cpp" />
+    <ClCompile Include="libsocket\socket.cpp" />
+    <ClCompile Include="libsocket\streamclient.cpp" />
+    <ClCompile Include="main\network.cpp" />
+    <ClCompile Include="matrix-hal\dummy_sensor.cpp" />
+    <ClCompile Include="matrix-hal\everloop.cpp" />
+    <ClCompile Include="matrix-hal\gpio_control.cpp" />
+    <ClCompile Include="matrix-hal\humidity_sensor.cpp" />
+    <ClCompile Include="matrix-hal\imu_sensor.cpp" />
+    <ClCompile Include="matrix-hal\matrix_driver.cpp" />
+    <ClCompile Include="matrix-hal\microphone_array.cpp" />
+    <ClCompile Include="matrix-hal\pressure_sensor.cpp" />
+    <ClCompile Include="matrix-hal\uv_sensor.cpp" />
+    <ClCompile Include="matrix-hal\wishbone_bus.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="libsocket\conf.h" />
+    <ClInclude Include="libsocket\epoll.hpp" />
+    <ClInclude Include="libsocket\exception.hpp" />
+    <ClInclude Include="libsocket\framing.hpp" />
+    <ClInclude Include="libsocket\inetbase.hpp" />
+    <ClInclude Include="libsocket\inetclientstream.hpp" />
+    <ClInclude Include="libsocket\inetserverstream.hpp" />
+    <ClInclude Include="libsocket\libinetsocket.h" />
+    <ClInclude Include="libsocket\select.hpp" />
+    <ClInclude Include="libsocket\socket.hpp" />
+    <ClInclude Include="libsocket\streamclient.hpp" />
+    <ClInclude Include="matrix-hal\cpp\driver\creator_memory_map.h" />
+    <ClInclude Include="matrix-hal\cpp\driver\dummy_data.h" />
+    <ClInclude Include="matrix-hal\cpp\driver\dummy_sensor.h" />
+    <ClInclude Include="matrix-hal\cpp\driver\everloop.h" />
+    <ClInclude Include="matrix-hal\cpp\driver\everloop_image.h" />
+    <ClInclude Include="matrix-hal\cpp\driver\gpio_control.h" />
+    <ClInclude Include="matrix-hal\cpp\driver\humidity_data.h" />
+    <ClInclude Include="matrix-hal\cpp\driver\humidity_sensor.h" />
+    <ClInclude Include="matrix-hal\cpp\driver\imu_data.h" />
+    <ClInclude Include="matrix-hal\cpp\driver\imu_sensor.h" />
+    <ClInclude Include="matrix-hal\cpp\driver\matrix_driver.h" />
+    <ClInclude Include="matrix-hal\cpp\driver\microphone_array.h" />
+    <ClInclude Include="matrix-hal\cpp\driver\pressure_data.h" />
+    <ClInclude Include="matrix-hal\cpp\driver\pressure_sensor.h" />
+    <ClInclude Include="matrix-hal\cpp\driver\uv_data.h" />
+    <ClInclude Include="matrix-hal\cpp\driver\uv_sensor.h" />
+    <ClInclude Include="matrix-hal\cpp\driver\wishbone_bus.h" />
+  </ItemGroup>
+  <ItemDefinitionGroup />
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets" />
+</Project>

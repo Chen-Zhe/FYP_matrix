@@ -28,7 +28,7 @@ int main(void)
 
 	string host = "0.0.0.0";
 	string port = "8000";
-	string answ;s
+	string answ;
 
 	try {
 		inet_stream_server srv(host, port, LIBSOCKET_IPv4);

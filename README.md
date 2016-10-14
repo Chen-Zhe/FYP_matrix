@@ -12,5 +12,5 @@
 - Visual Studio 2015
 - VC for Linux development plugin (https://blogs.msdn.microsoft.com/vcblog/2016/03/30/visual-c-for-linux-development/)
 - Visual Studio plugin for Github
-- Linker option -lpthread -lfftw3f (Saved in the solution's option)
+- Linker option '-lpthread -lfftw3f' (Saved in the solution's option)
 - Install FFTW3 library: `$ sudo apt-get install libfftw3-3 libfftw3-3`

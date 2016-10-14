@@ -1,11 +1,6 @@
-/*
- * Copyright 2016 <Admobilize>
- * All rights reserved.
- */
-
-#include <wiringPi.h>
+#include <unistd.h>
+#include "../headers_for_rpi/fftw3.h"
 #include <string.h>
-#include <fftw3.h>
 #include <stdint.h>
 
 #include <string>
@@ -71,51 +66,12 @@ float* Correlation::Result() { return c_; }
 
 void Correlation::Exec(int16_t* a, int16_t* b) {
   for (int i = 0; i < order_; i++) in_[i] = a[i];
-
-  if (0) {
-    std::cout << std::endl << "a=[";
-    for (int i = 0; i < order_; i++) std::cout << in_[i] << ",";
-    std::cout << "]" << std::endl;
-  }
   fftwf_execute(forward_plan_a_);
-
-  if (0) {
-    std::cout << std::endl << "A=[";
-    for (int i = 0; i < order_; i++) std::cout << A_[i] << ",";
-    std::cout << "]" << std::endl;
-  }
-
   for (int i = 0; i < order_; i++) in_[i] = b[i];
-
-  if (0) {
-    std::cout << std::endl << "b=[";
-    for (int i = 0; i < order_; i++) std::cout << in_[i] << ",";
-    std::cout << "]" << std::endl;
-  }
-
   fftwf_execute(forward_plan_b_);
-  if (0) {
-    std::cout << std::endl << "B=[";
-    for (int i = 0; i < order_; i++) std::cout << B_[i] << ",";
-    std::cout << "]" << std::endl;
-  }
-
   Corr(C_, A_, B_);
-  if (0) {
-    std::cout << std::endl << "C=[";
-    for (int i = 0; i < order_; i++) std::cout << C_[i] << ",";
-    std::cout << "]" << std::endl;
-  }
-
   fftwf_execute(inverse_plan_);
-
   for (int i = 0; i < order_; i++) c_[i] = c_[i] / order_;
-
-  if (0) {
-    std::cout << std::endl << "c=[";
-    for (int i = 0; i < order_; i++) std::cout << c_[i] / 128.0 << ",";
-    std::cout << "]" << std::endl;
-  }
 }
 
 void Correlation::Corr(float* out, float* x, float* y) {
@@ -146,11 +102,7 @@ int main() {
   hal::Everloop everloop;
   everloop.Setup(&bus);
 
-  hal::EverloopImage image1d;
-
-  for (auto& led : image1d.leds) led.red = 10;
-
-  everloop.Write(&image1d);
+  hal::EverloopImage LEDring;
 
   int16_t buffer[mics.Channels()][mics.SamplingRate()];
 
@@ -193,9 +145,36 @@ int main() {
         index  = current_index[channel];
       }
     }
-    if(mag>2e8)
+	for (auto& led : LEDring.leds) led.blue = 0;
+    if(mag>2e8){
        std::cout << dir << "\t" << index << "\t" <<  mag << std::endl;
+	
+	
+	switch (dir) {
+	case 0:
+		if (index > 100) LEDring.leds[23].blue = 10;
+		else if (index < 20) LEDring.leds[6].blue = 10;
+		break;
+	case 1:
+		if (index > 100) LEDring.leds[27].blue = 10;
+		else if (index < 20) LEDring.leds[10].blue = 10;
+		break;
+	case 2:
+		if (index > 100) LEDring.leds[31].blue = 10;
+		else if (index < 20) LEDring.leds[14].blue = 10;
+		break;
+	case 3:
+		if (index > 100) LEDring.leds[0].blue = 10;
+		else if (index < 20) LEDring.leds[18].blue = 10;
+		break;
+	}
+
+	
+	}
+	everloop.Write(&LEDring);
+	sleep(1);
   }
+
 
   return 0;
 }

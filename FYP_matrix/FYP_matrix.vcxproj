@@ -35,15 +35,17 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <RemoteCppCompileToolExe>g++</RemoteCppCompileToolExe>
-    <RemoteLdToolExe>g++ -lpthread</RemoteLdToolExe>
+    <RemoteLdToolExe>g++ -lpthread -lfftw3f</RemoteLdToolExe>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <Link>
       <LibraryDependencies>wiringPi</LibraryDependencies>
     </Link>
     <RemotePostBuildEvent>
-      <Command>gpio export 17 out</Command>
-      <Message>export pin 17 using the gpio utility so that we can execute the blink program without sudo</Message>
+      <Command>
+      </Command>
+      <Message>
+      </Message>
     </RemotePostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
@@ -51,8 +53,10 @@
       <LibraryDependencies>wiringPi</LibraryDependencies>
     </Link>
     <RemotePostBuildEvent>
-      <Command>gpio export 17 out</Command>
-      <Message>export pin 17 using the gpio utility so that we can execute the blink program without sudo</Message>
+      <Command>
+      </Command>
+      <Message>
+      </Message>
     </RemotePostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -65,7 +69,7 @@
     <ClCompile Include="libsocket\select.cpp" />
     <ClCompile Include="libsocket\socket.cpp" />
     <ClCompile Include="libsocket\streamclient.cpp" />
-    <ClCompile Include="main\beamforming_demo.cpp" />
+    <ClCompile Include="main\DOA_estimation_preliminary.cpp" />
     <ClCompile Include="matrix-hal\dummy_sensor.cpp" />
     <ClCompile Include="matrix-hal\everloop.cpp" />
     <ClCompile Include="matrix-hal\gpio_control.cpp" />
@@ -78,6 +82,7 @@
     <ClCompile Include="matrix-hal\wishbone_bus.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="headers_for_rpi\fftw3.h" />
     <ClInclude Include="libsocket\conf.h" />
     <ClInclude Include="libsocket\epoll.hpp" />
     <ClInclude Include="libsocket\exception.hpp" />

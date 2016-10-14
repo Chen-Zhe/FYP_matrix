@@ -58,7 +58,7 @@
     <ClCompile Include="libsocket\libinetsocket.cpp">
       <Filter>Library\Libsocket</Filter>
     </ClCompile>
-    <ClCompile Include="main\beamforming_demo.cpp">
+    <ClCompile Include="main\DOA_estimation_preliminary.cpp">
       <Filter>main</Filter>
     </ClCompile>
   </ItemGroup>
@@ -160,6 +160,9 @@
     </ClInclude>
     <ClInclude Include="libsocket\conf.h">
       <Filter>Library\Libsocket</Filter>
+    </ClInclude>
+    <ClInclude Include="headers_for_rpi\fftw3.h">
+      <Filter>Library</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

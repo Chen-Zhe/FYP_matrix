@@ -13,10 +13,10 @@
 #include <iostream>
 #include <valarray>
 
-#include "../cpp/driver/everloop_image.h"
-#include "../cpp/driver/everloop.h"
-#include "../cpp/driver/microphone_array.h"
-#include "../cpp/driver/wishbone_bus.h"
+#include "../matrix-hal/cpp/driver/everloop_image.h"
+#include "../matrix-hal/cpp/driver/everloop.h"
+#include "../matrix-hal/cpp/driver/microphone_array.h"
+#include "../matrix-hal/cpp/driver/wishbone_bus.h"
 
 const int N = 128;
 

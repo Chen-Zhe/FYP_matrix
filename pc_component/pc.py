@@ -6,7 +6,7 @@ import wave
 seconds_to_record = 10
 
 out_sound = wave.open('test.wav', 'wb')
-# (nchannels, sampwidth, framerate, nframes, comptype, compname)
+# (num of channels, sampling width in bytes, sampling rate, num of frames, compression type, compression name)
 out_sound.setparams((8, 2, 16000, 0, 'NONE', 'not compressed'))
 
 connection = socket.socket()

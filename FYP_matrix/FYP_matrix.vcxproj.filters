@@ -58,7 +58,7 @@
     <ClCompile Include="libsocket\libinetsocket.cpp">
       <Filter>Library\Libsocket</Filter>
     </ClCompile>
-    <ClCompile Include="main\DOA_estimation_preliminary.cpp">
+    <ClCompile Include="main\RecordingStream.cpp">
       <Filter>main</Filter>
     </ClCompile>
   </ItemGroup>

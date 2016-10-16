@@ -69,7 +69,7 @@
     <ClCompile Include="libsocket\select.cpp" />
     <ClCompile Include="libsocket\socket.cpp" />
     <ClCompile Include="libsocket\streamclient.cpp" />
-    <ClCompile Include="main\DOA_estimation_preliminary.cpp" />
+    <ClCompile Include="main\RecordingStream.cpp" />
     <ClCompile Include="matrix-hal\dummy_sensor.cpp" />
     <ClCompile Include="matrix-hal\everloop.cpp" />
     <ClCompile Include="matrix-hal\gpio_control.cpp" />

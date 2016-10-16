@@ -4,7 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <valarray>
-
+#include <sys/time.h>
 #include "../matrix-hal/cpp/driver/everloop_image.h"
 #include "../matrix-hal/cpp/driver/everloop.h"
 #include "../matrix-hal/cpp/driver/microphone_array.h"
@@ -42,10 +42,16 @@ int main() {
 	sleep(2);
 
 	pthread_t ledThread;
-	pthread_create(&ledThread, NULL, ledRun, (void *)&everloopLed);
+	//pthread_create(&ledThread, NULL, ledRun, (void *)&everloopLed);
 
+	struct timeval start, end;
+	gettimeofday(&start, NULL);
+	long mtime, seconds, useconds;
 	while (true) {
-		mics.Read(); /* Reading 8-mics buffer from the FPGA */
+		/* Reading 8-mics buffer from the FPGA 
+		The reading process is a blocking process that read in 8*128 samples every 8ms
+		*/
+		mics.Read();
 
 		for (uint32_t s = 0; s < mics.NumberOfSamples(); s++) {
 			for (uint16_t c = 0; c < mics.Channels(); c++) { /* mics.Channels()=8 */
@@ -54,6 +60,13 @@ int main() {
 			step++;
 		}
 		if (step == seconds_to_record * mics.SamplingRate()) break;
+		gettimeofday(&end, NULL);
+		seconds = end.tv_sec - start.tv_sec;
+		useconds = end.tv_usec - start.tv_usec;
+
+		mtime = ((seconds) * 1000 + useconds / 1000.0) + 0.5;
+
+		printf("Current Step: %d, Elapsed time: %ld milliseconds\n", step, mtime);
 	}
 
 	pthread_cancel(ledThread);//TODO: change it to using mutex

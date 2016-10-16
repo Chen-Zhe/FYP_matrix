@@ -5,7 +5,7 @@ import wave
 #record a single audio file of 8 channels
 seconds_to_record = 10
 
-out_sound = wave.open('test.wav', 'wb')
+out_sound = wave.open('test5.wav', 'wb')
 # (num of channels, sampling width in bytes, sampling rate, num of frames, compression type, compression name)
 out_sound.setparams((8, 2, 16000, 0, 'NONE', 'not compressed'))
 
@@ -18,7 +18,7 @@ expected_bytes = 16000*2*8 * seconds_to_record
 bytes_received = 0
 
 while bytes_received<expected_bytes:
-    file_buffer = connection.recv(4096) #will not always receive 4096 bytes
+    file_buffer = connection.recv(4096) # it will not always receive 4096 bytes
 
     file_buffer_length = len(file_buffer)
     bytes_received += file_buffer_length

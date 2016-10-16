@@ -30,6 +30,7 @@ struct LED {
 	matrixCreator::EverloopImage Image;
 };
 
+struct LED ledRing; // Red = error, Blue = ready, Green = complete
 char hostname[HOST_NAME_MAX];
 bool networkConnected = false;
 
@@ -46,24 +47,29 @@ int main() {
 
 	matrixCreator::MicrophoneArray microphoneArray;
 	
-	struct LED ledRing;
-
 	ledRing.Driver.Setup(&bus);
-	for (auto& led : ledRing.Image.leds) led.red = 10;
-	ledRing.Driver.Write(&ledRing.Image);
-
+	
 	//wait for network connection
 	std::unique_ptr<libsocket::inet_stream> tcpConnection;
 	try {
 		libsocket::inet_stream_server tcpServer("0.0.0.0", "8000", LIBSOCKET_IPv4);
+
+		//signal the user that the server is ready
 		std::cout << hostname << " - TCP server ready" << std::endl;
+		for (auto& led : ledRing.Image.leds) { led.red = 0; led.green = 0; led.blue = 8; }
+		ledRing.Driver.Write(&ledRing.Image);
+		
 		tcpConnection = tcpServer.accept2();
 	}
 	catch (const libsocket::socket_exception& exc)
 	{
-		std::cout << exc.mesg << std::endl;
-	}
+		for (auto& led : ledRing.Image.leds) { led.red = 8; led.green = 0; led.blue = 0; }
+		ledRing.Driver.Write(&ledRing.Image);
 
+		std::cout << exc.mesg << std::endl;
+		return 0;
+	}
+	
 	networkConnected = true;
 
 	uint32_t buffer_switch = 0;
@@ -73,7 +79,7 @@ int main() {
 	pthread_t networkStreamingThread;//spawn networking thread and pass the connection
 	pthread_create(&networkStreamingThread, NULL, networkStream, (void *)&tcpConnection);
 
-	for (auto& led : ledRing.Image.leds) led.red = 0;
+	for (auto& led : ledRing.Image.leds) { led.red = 0; led.green = 0; led.blue = 0; }
 	ledRing.Driver.Write(&ledRing.Image);
 
 	ledRing.Driver.Write(&ledRing.Image);
@@ -105,18 +111,13 @@ int main() {
 	//end of the program, signal the user that recording have been completed
 	std::cout << "------ Recording ended ------" << std::endl;
 
-	for (auto& led : ledRing.Image.leds) {
-		led.red = 0;
-		led.green = 10;
-		led.blue = 0;
-	}
+	for (auto& led : ledRing.Image.leds) { led.red = 0;led.green = 8;led.blue = 0; }
 	ledRing.Driver.Write(&ledRing.Image);
 
 	sleep(1);
 
-	for (auto& led : ledRing.Image.leds) {
-		led.green = 0;
-	}
+	for (auto& led : ledRing.Image.leds) { led.red = 0; led.green = 0; led.blue = 0; }
+	ledRing.Driver.Write(&ledRing.Image);
 	ledRing.Driver.Write(&ledRing.Image);
 
 	return 0;

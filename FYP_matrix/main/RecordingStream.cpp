@@ -86,7 +86,6 @@ int main() {
 	microphoneArray.Setup(&bus);
 
 	while (networkConnected){
-
 		uint32_t step = 0;
 		while (step < BUFFER_SAMPLES_PER_CHANNEL) {
 
@@ -104,7 +103,7 @@ int main() {
 		}
 		pthread_mutex_lock(&bufferMutex[(buffer_switch + 1) % 2]);
 		pthread_mutex_unlock(&bufferMutex[buffer_switch]);
-		//std::cout << "Buffer " << buffer_switch << " Recorded" << std::endl;
+		std::cout << "Buffer " << buffer_switch << " Recorded" << std::endl;
 		buffer_switch = (buffer_switch + 1) % 2;
 	}
 
@@ -137,12 +136,14 @@ void *networkStream(void *connectionPointer)
 		try {
 			(*tcpConnection)->
 				snd(buffer[bufferSwitch], STREAMING_CHANNELS * BUFFER_SAMPLES_PER_CHANNEL * 2);
+			//std::cout << "sending" << std::endl;
 		}
 		catch (const libsocket::socket_exception& exc)
 		{
 			//assume network disconnection means recording completed
 			networkConnected = false; //set flag
 			pthread_mutex_unlock(&bufferMutex[bufferSwitch]);//unlock mutex
+			std::cout << "Network Disconnected" << std::endl;
 			pthread_exit(NULL);//terminate itself
 		}
 

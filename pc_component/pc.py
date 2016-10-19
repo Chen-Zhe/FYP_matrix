@@ -2,7 +2,6 @@ import socket
 import datetime
 import wave
 import threading
-import sys
 
 class RecordStream(threading.Thread):
     def __init__(self):
@@ -31,8 +30,7 @@ class RecordStream(threading.Thread):
 
             if bytes_received>=expected_bytes:
                 self.seconds_recorded +=1
-                sys.stdout.write(str(self.seconds_recorded) + " second recorded")
-                sys.stdout.write("\r")
+                print self.seconds_recorded, "seconds recorded\r",
                 if self.continue_recording:
                     bytes_received = bytes_received-expected_bytes                    
                 else:

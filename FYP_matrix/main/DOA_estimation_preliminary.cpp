@@ -107,8 +107,8 @@ int main() {
   int16_t buffer[mics.Channels()][mics.SamplingRate()];
 
   Correlation corr(N);
-  std::valarray<float> current_mag(4);
-  std::valarray<float> current_index(4);
+  std::valarray<float> current_mag(2);
+  std::valarray<float> current_index(2);
 
   while (true) {
     mics.Read(); /* Reading 128 samples per microphone */
@@ -119,8 +119,8 @@ int main() {
       }
     }
 
-    for (int channel = 0; channel < 4; channel++) {
-      corr.Exec(buffer[channel], buffer[channel + 4]);
+    //channel 0 - 4
+      corr.Exec(buffer[0], buffer[4]);
 
       float* c = corr.Result();
 
@@ -131,20 +131,32 @@ int main() {
           index = i;
           m = c[i];
         }
-      current_mag[channel] = m;
-      current_index[channel] = index;
-    }
+      current_mag[0] = m;
+      current_index[0] = index;
+	  //channel 2 - 6
+	  corr.Exec(buffer[2], buffer[6]);
+
+	  c = corr.Result();
+
+	  index = 0;
+	  m = c[0];
+	  for (int i = 1; i < N; i++)
+		  if (c[i] > m) {
+			  index = i;
+			  m = c[i];
+		  }
+	  current_mag[1] = m;
+	  current_index[1] = index;
 
     int dir = 0;
-    int index = current_index[0];
+    index = current_index[0];
     float mag = current_mag[0];
-    for (int channel = 1; channel < 4; channel++) {
-      if (mag < current_mag[channel]) {
-        dir = channel;
-        mag = current_mag[channel];
-        index  = current_index[channel];
+      if (mag < current_mag[1]) {
+        dir = 2;
+        mag = current_mag[1];
+        index  = current_index[1];
       }
-    }
+    
 	for (auto& led : LEDring.leds) led.blue = 0;
     if(mag>2e8){
        std::cout << dir << "\t" << index << "\t" <<  mag << std::endl;
@@ -152,20 +164,12 @@ int main() {
 	
 	switch (dir) {
 	case 0:
-		if (index > 100) LEDring.leds[23].blue = 10;
-		else if (index < 20) LEDring.leds[6].blue = 10;
-		break;
-	case 1:
-		if (index > 100) LEDring.leds[27].blue = 10;
-		else if (index < 20) LEDring.leds[10].blue = 10;
+		if (index > 100) for(int i=19; i<28; i++) LEDring.leds[i].blue = 10;
+		else if (index < 20) for (int i = 2; i<10; i++) LEDring.leds[i].blue = 10;
 		break;
 	case 2:
-		if (index > 100) LEDring.leds[31].blue = 10;
-		else if (index < 20) LEDring.leds[14].blue = 10;
-		break;
-	case 3:
-		if (index > 100) LEDring.leds[0].blue = 10;
-		else if (index < 20) LEDring.leds[18].blue = 10;
+		if (index > 100) for (int i = 29; i<37; i++) LEDring.leds[i%35].blue = 10;
+		else if (index < 20) for (int i = 10; i<19; i++) LEDring.leds[i].blue = 10;
 		break;
 	}
 

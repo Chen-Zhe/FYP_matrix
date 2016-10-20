@@ -111,7 +111,7 @@ int main() {
   std::valarray<float> current_index(4);
 
   while (true) {
-    mics.Read(); /* Reading 8-mics buffer from de FPGA */
+    mics.Read(); /* Reading 128 samples per microphone */
 
     for (uint32_t s = 0; s < mics.NumberOfSamples(); s++) {
       for (uint16_t c = 0; c < mics.Channels(); c++) { /* mics.Channels()=8 */
@@ -172,7 +172,7 @@ int main() {
 	
 	}
 	everloop.Write(&LEDring);
-	sleep(1);
+	usleep(100000);
   }
 
 

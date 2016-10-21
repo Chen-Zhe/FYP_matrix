@@ -35,7 +35,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <RemoteCppCompileToolExe>g++</RemoteCppCompileToolExe>
-    <RemoteLdToolExe>g++ -lpthread -lfftw3f</RemoteLdToolExe>
+    <RemoteLdToolExe>g++ -lpthread -lsocket++ -lfftw3f</RemoteLdToolExe>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <Link>
@@ -60,15 +60,6 @@
     </RemotePostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="libsocket\exception.cpp" />
-    <ClCompile Include="libsocket\framing.cpp" />
-    <ClCompile Include="libsocket\inetbase.cpp" />
-    <ClCompile Include="libsocket\inetclientstream.cpp" />
-    <ClCompile Include="libsocket\inetserverstream.cpp" />
-    <ClCompile Include="libsocket\libinetsocket.cpp" />
-    <ClCompile Include="libsocket\select.cpp" />
-    <ClCompile Include="libsocket\socket.cpp" />
-    <ClCompile Include="libsocket\streamclient.cpp" />
     <ClCompile Include="main\DOA_estimation_preliminary.cpp" />
     <ClCompile Include="matrix-hal\dummy_sensor.cpp" />
     <ClCompile Include="matrix-hal\everloop.cpp" />
@@ -84,16 +75,28 @@
   <ItemGroup>
     <ClInclude Include="headers_for_rpi\fftw3.h" />
     <ClInclude Include="libsocket\conf.h" />
+    <ClInclude Include="libsocket\dgramclient.hpp" />
+    <ClInclude Include="libsocket\dgramoverstream.hpp" />
     <ClInclude Include="libsocket\epoll.hpp" />
     <ClInclude Include="libsocket\exception.hpp" />
     <ClInclude Include="libsocket\framing.hpp" />
     <ClInclude Include="libsocket\inetbase.hpp" />
+    <ClInclude Include="libsocket\inetclientdgram.hpp" />
     <ClInclude Include="libsocket\inetclientstream.hpp" />
+    <ClInclude Include="libsocket\inetdgram.hpp" />
+    <ClInclude Include="libsocket\inetserverdgram.hpp" />
     <ClInclude Include="libsocket\inetserverstream.hpp" />
     <ClInclude Include="libsocket\libinetsocket.h" />
+    <ClInclude Include="libsocket\libunixsocket.h" />
     <ClInclude Include="libsocket\select.hpp" />
     <ClInclude Include="libsocket\socket.hpp" />
     <ClInclude Include="libsocket\streamclient.hpp" />
+    <ClInclude Include="libsocket\unixbase.hpp" />
+    <ClInclude Include="libsocket\unixclientdgram.hpp" />
+    <ClInclude Include="libsocket\unixclientstream.hpp" />
+    <ClInclude Include="libsocket\unixdgram.hpp" />
+    <ClInclude Include="libsocket\unixserverdgram.hpp" />
+    <ClInclude Include="libsocket\unixserverstream.hpp" />
     <ClInclude Include="matrix-hal\cpp\driver\creator_memory_map.h" />
     <ClInclude Include="matrix-hal\cpp\driver\dummy_data.h" />
     <ClInclude Include="matrix-hal\cpp\driver\dummy_sensor.h" />

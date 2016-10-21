@@ -1,5 +1,16 @@
+#ifndef LIBSOCKET_UNIXCLIENTDGRAM_H_1A0CF567F9A946AA80C64654F35DFA9E
+#define LIBSOCKET_UNIXCLIENTDGRAM_H_1A0CF567F9A946AA80C64654F35DFA9E
+
+# include "unixdgram.hpp"
+# include "dgramclient.hpp"
+
 # include <string>
-# include <stdio.h>
+
+/**
+ * @file unixclientdgram.hpp
+ *
+ * Contains the class for use of UNIX-domain datagram sockets.
+ */
 /*
    The committers of the libsocket project, all rights reserved
    (c) 2012, dermesser <lbo@spheniscida.de>
@@ -22,47 +33,34 @@
 
 */
 
-/**
- *  @file inetbase.cpp
- *  @brief The base class for all internet-based sockets.
- *
- * 	inetbase.cpp defines the class inet_socket. This class
- * 	is used as base class in the hierarchy between socket and
- * 	the next specific class. Inheriting classes are inet_dgram,
- * 	inet_stream_client and inet_stream_server.
- *
- * 	The class contains the data elements host and port. If the inheriting
- * 	class is a client, like inet_stream_client or inet_dgram_client (via inet_dgram),
- * 	this fields contain the remote peer. If the inheriting class is a server socket,
- * 	this fields contain the address and the port to which the server is bound.
- *
- * 	The getters, gethost() and getport() may be used for a
- * 	server application to get the paramters of the remote peer.
- */
-
-# include "inetbase.hpp"
+using std::string;
 
 namespace libsocket
 {
-    using std::string;
-
-    inet_socket::inet_socket() : host(""), port("") {}
-
-    /**
-     * For sockets behaving as client: Returns the remote host.
-     * For sockets behaving as server: Returns the address bound to.
+    /** @addtogroup libsocketplusplus
+     * @{
      */
-    const string& inet_socket::gethost(void) const
-    {
-	return host;
-    }
-
     /**
-     * For sockets behaving as client: Returns the remote port.
-     * For sockets behaving as server: Returns the port bound to.
+     * @brief Class for UNIX datagram sockets
      */
-    const string& inet_socket::getport(void) const
+    class unix_dgram_client : public unix_dgram, public dgram_client_socket
     {
-	return port;
-    }
+	public:
+
+	    unix_dgram_client(int flags=0);
+	    unix_dgram_client(const char* path, int flags=0);
+	    unix_dgram_client(const string& path, int flags=0);
+
+	    void setup(const char* path, int flags=0);
+
+	    void connect(const char* path);
+	    void connect(const string& path);
+
+	    void deconnect(void);
+    };
+    /**
+     * @}
+     */
 }
+
+# endif

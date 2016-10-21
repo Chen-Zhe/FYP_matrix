@@ -1,9 +1,15 @@
-# include <string>
-# include <stdio.h>
-# include <errno.h>
-# include <sstream>
-# include <cstring>
+#ifndef LIBSOCKET_UNIXSERVERDGRAM_H_110A6B56F8A4414DAB6BE7B527FDA490
+#define LIBSOCKET_UNIXSERVERDGRAM_H_110A6B56F8A4414DAB6BE7B527FDA490
 
+# include "unixdgram.hpp"
+
+# include <string>
+
+/**
+ * @file unixserverdgram.hpp
+ *
+ * Contains the class for bound UNIX-domain datagram sockets.
+ */
 /*
    The committers of the libsocket project, all rights reserved
    (c) 2012, dermesser <lbo@spheniscida.de>
@@ -26,59 +32,35 @@
 
 */
 
-/**
- * @file exception.cpp
- * @brief Exception class in libsocket **CLASS FOR INTERNAL USE ONLY**
- *
- * The class defined here, socket_exception, is a
- * class for exception objects. Objects instantiated
- * from this class are thrown if something goes wrong.
- *
- * The class contains only the data member mesg and the
- * constructor which constructs the error string in mesg.
- * Typically, you'd create an object of this class with the
- * following call: `socket_exception(__FILE__,__LINE__,"Error Message");`
- *
- * The tokens are substituded by the preprocessor and show where
- * the error occurred.
- *
- * @addtogroup libsocketplusplus
- * @{
- */
-
-# include "exception.hpp"
+using std::string;
 
 namespace libsocket
 {
-    using std::string;
-
-    /**
-     * @brief	Constructor of a socket_exception object
-     *
-     * This constructor creates a new socket_exception object.
-     *
-     * @param	f   File in which the error comes (__FILE__)
-     * @param	l   Line (__LINE__)
-     * @param	m   Description of the error.
+    /** @addtogroup libsocketplusplus
+     * @{
      */
-    socket_exception::socket_exception(const string& file, int line, const string& message, bool show_errno)
+    /**
+     * @brief Provides an interface to UNIX-domain datagram sockets.
+     *
+     * The difference to unix_dgram_client is that this class cannot be connected to another socket.
+     */
+    class unix_dgram_server : public unix_dgram
     {
-	std::ostringstream message_stream;
+	private:
+	    bool bound; ///< Shows if the socket is already bound (for setup routines)
 
-	// Saving errno here should be safe
-	err = errno;
+	public:
 
-	message_stream << file << ":" << line << ": " << message;
+	    unix_dgram_server(void);
+	    unix_dgram_server(const char* bindpath, int socket_flags=0);
+	    unix_dgram_server(const string& bindpath, int socket_flags=0);
 
-	if ( show_errno )
-	    message_stream << " (" << std::strerror(errno) << ")";
-
-	message_stream << "\n";
-
-	mesg = message_stream.str();
-    }
+	    void setup(const char* bindpath, int socket_flags=0);
+	    void setup(const string& bindpath, int socket_flags=0);
+    };
+    /**
+     * @}
+     */
 }
 
-/**
- * @}
- */
+# endif

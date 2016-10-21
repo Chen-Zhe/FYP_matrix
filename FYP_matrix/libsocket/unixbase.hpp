@@ -1,3 +1,16 @@
+#ifndef LIBSOCKET_UNIXBASE_H_0B648A3E27324425A6B7B9F7B262E7D1
+#define LIBSOCKET_UNIXBASE_H_0B648A3E27324425A6B7B9F7B262E7D1
+# include <string>
+
+# include "socket.hpp"
+
+# include "libunixsocket.h"
+
+/**
+ * @file unixbase.hpp
+ *
+ * Contains the base class for all UNIX-related socket classes.
+ */
 /*
    The committers of the libsocket project, all rights reserved
    (c) 2012, dermesser <lbo@spheniscida.de>
@@ -20,33 +33,32 @@
 
 */
 
-/**
- * @file select.cpp
- *
- * @brief Contains non-template pieces of the select logic.
- */
-
-# include "exception.hpp"
-# include <vector>
-
 namespace libsocket
 {
-    /***** UTIL *****/
+    using std::string;
+
     /**
-     * @brief Utility function to find the highest number in a vector (typically, the highest file descriptor)
+     * @addtogroup libsocketplusplus
+     * @{
      */
-    int highestfd(const std::vector<int>& v)
+    /**
+     * @brief Base class for all UNIX socket classes
+     *
+     * This class provides only the data member _path and is used as base class for every socket class
+     * working with UNIX sockets.
+     */
+    class unix_socket : public virtual socket
     {
-	std::vector<int>::const_iterator end = v.end();
-	int highestfd = 0;
+	protected:
+	    string _path; //!< The path we're connected (client stream) or bound (server stream, server datagram)
 
-	for ( std::vector<int>::const_iterator cur = v.begin(); cur != end; cur++ )
-	{
-	    if ( *cur > highestfd )
-		highestfd = *cur;
-	}
+	public:
+	    unix_socket();
 
-	return highestfd;
-    }
-
+	    string get_path(void);
+    };
+    /**
+     * @}
+     */
 }
+# endif

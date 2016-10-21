@@ -1,11 +1,19 @@
+#ifndef LIBSOCKET_UNIXCLIENTSTREAM_H_9C64A16FB22D46FC9436989C1752F0CF
+#define LIBSOCKET_UNIXCLIENTSTREAM_H_9C64A16FB22D46FC9436989C1752F0CF
+
 # include <string>
-# include <string.h>
 
-# include "framing.hpp"
+# include "streamclient.hpp"
+# include "unixbase.hpp"
 
+/**
+ * @file unixclientstream.hpp
+ *
+ * Contains the class for use of UNIX-domain stream sockets as client.
+ */
 /*
    The committers of the libsocket project, all rights reserved
-   (c) 2016, dermesser <lbo@spheniscida.de>
+   (c) 2012, dermesser <lbo@spheniscida.de>
 
    Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
    following conditions are met:
@@ -25,40 +33,31 @@
 
 */
 
-/**
- * @file framing.cpp
- * @brief Utility functions for framing.
- *
- * @addtogroup libsocketplusplus
- * @{
- */
-
 namespace libsocket
 {
-    void encode_uint32(uint32_t n, char* dst)
+    using std::string;
+
+    /** @addtogroup libsocketplusplus
+     * @{
+     */
+    /**
+     * @brief Provides an interface for working with UNIX STREAM sockets
+     */
+    class unix_stream_client : public unix_socket, public stream_client_socket
     {
-        for ( int i = 3; i >= 0; i-- )
-        {
-            dst[i] = n >> (8 * (3 - i));
-        }
-    }
+	public:
 
-    uint32_t decode_uint32(const char* src)
-    {
-        uint32_t result = 0;
-        // We store unsigned numbers in signed chars; convert, otherwise the MSB being
-        // set would be interpreted as sign and taken over to uint32_t's MSB.
-        const unsigned char* src_ = (const unsigned char*)src;
+	    unix_stream_client(void);
+	    unix_stream_client(const char* path, int socket_flags=0);
+	    unix_stream_client(const string& path, int socket_flags=0);
 
-        for ( int i = 3; i >= 0; i-- )
-        {
-            result |= uint32_t(src_[i]) << (8 * (3 - i));
-        }
+	    void connect(const char* path, int socket_flags=0);
+	    void connect(const string& path, int socket_flags=0);
 
-        return result;
-    }
+	    friend class unix_stream_server; ///< unix_stream_server returns pointer to unix_stream_client objects when accepting connections.
+    };
+    /**
+     * @}
+     */
 }
-
-/**
- * @}
- */
+# endif

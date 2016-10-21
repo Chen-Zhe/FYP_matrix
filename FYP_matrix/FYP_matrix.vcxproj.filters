@@ -31,33 +31,6 @@
     <ClCompile Include="matrix-hal\dummy_sensor.cpp">
       <Filter>Library\Matrix-HAL</Filter>
     </ClCompile>
-    <ClCompile Include="libsocket\exception.cpp">
-      <Filter>Library\Libsocket</Filter>
-    </ClCompile>
-    <ClCompile Include="libsocket\framing.cpp">
-      <Filter>Library\Libsocket</Filter>
-    </ClCompile>
-    <ClCompile Include="libsocket\inetbase.cpp">
-      <Filter>Library\Libsocket</Filter>
-    </ClCompile>
-    <ClCompile Include="libsocket\inetclientstream.cpp">
-      <Filter>Library\Libsocket</Filter>
-    </ClCompile>
-    <ClCompile Include="libsocket\inetserverstream.cpp">
-      <Filter>Library\Libsocket</Filter>
-    </ClCompile>
-    <ClCompile Include="libsocket\select.cpp">
-      <Filter>Library\Libsocket</Filter>
-    </ClCompile>
-    <ClCompile Include="libsocket\socket.cpp">
-      <Filter>Library\Libsocket</Filter>
-    </ClCompile>
-    <ClCompile Include="libsocket\streamclient.cpp">
-      <Filter>Library\Libsocket</Filter>
-    </ClCompile>
-    <ClCompile Include="libsocket\libinetsocket.cpp">
-      <Filter>Library\Libsocket</Filter>
-    </ClCompile>
     <ClCompile Include="main\DOA_estimation_preliminary.cpp">
       <Filter>main</Filter>
     </ClCompile>
@@ -128,6 +101,18 @@
     <ClInclude Include="matrix-hal\cpp\driver\wishbone_bus.h">
       <Filter>Library\Matrix-HAL</Filter>
     </ClInclude>
+    <ClInclude Include="headers_for_rpi\fftw3.h">
+      <Filter>Library</Filter>
+    </ClInclude>
+    <ClInclude Include="libsocket\conf.h">
+      <Filter>Library\Libsocket</Filter>
+    </ClInclude>
+    <ClInclude Include="libsocket\dgramclient.hpp">
+      <Filter>Library\Libsocket</Filter>
+    </ClInclude>
+    <ClInclude Include="libsocket\dgramoverstream.hpp">
+      <Filter>Library\Libsocket</Filter>
+    </ClInclude>
     <ClInclude Include="libsocket\epoll.hpp">
       <Filter>Library\Libsocket</Filter>
     </ClInclude>
@@ -140,13 +125,25 @@
     <ClInclude Include="libsocket\inetbase.hpp">
       <Filter>Library\Libsocket</Filter>
     </ClInclude>
+    <ClInclude Include="libsocket\inetclientdgram.hpp">
+      <Filter>Library\Libsocket</Filter>
+    </ClInclude>
     <ClInclude Include="libsocket\inetclientstream.hpp">
+      <Filter>Library\Libsocket</Filter>
+    </ClInclude>
+    <ClInclude Include="libsocket\inetdgram.hpp">
+      <Filter>Library\Libsocket</Filter>
+    </ClInclude>
+    <ClInclude Include="libsocket\inetserverdgram.hpp">
       <Filter>Library\Libsocket</Filter>
     </ClInclude>
     <ClInclude Include="libsocket\inetserverstream.hpp">
       <Filter>Library\Libsocket</Filter>
     </ClInclude>
     <ClInclude Include="libsocket\libinetsocket.h">
+      <Filter>Library\Libsocket</Filter>
+    </ClInclude>
+    <ClInclude Include="libsocket\libunixsocket.h">
       <Filter>Library\Libsocket</Filter>
     </ClInclude>
     <ClInclude Include="libsocket\select.hpp">
@@ -158,11 +155,23 @@
     <ClInclude Include="libsocket\streamclient.hpp">
       <Filter>Library\Libsocket</Filter>
     </ClInclude>
-    <ClInclude Include="libsocket\conf.h">
+    <ClInclude Include="libsocket\unixbase.hpp">
       <Filter>Library\Libsocket</Filter>
     </ClInclude>
-    <ClInclude Include="headers_for_rpi\fftw3.h">
-      <Filter>Library</Filter>
+    <ClInclude Include="libsocket\unixclientdgram.hpp">
+      <Filter>Library\Libsocket</Filter>
+    </ClInclude>
+    <ClInclude Include="libsocket\unixclientstream.hpp">
+      <Filter>Library\Libsocket</Filter>
+    </ClInclude>
+    <ClInclude Include="libsocket\unixdgram.hpp">
+      <Filter>Library\Libsocket</Filter>
+    </ClInclude>
+    <ClInclude Include="libsocket\unixserverdgram.hpp">
+      <Filter>Library\Libsocket</Filter>
+    </ClInclude>
+    <ClInclude Include="libsocket\unixserverstream.hpp">
+      <Filter>Library\Libsocket</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

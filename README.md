@@ -4,7 +4,6 @@
 - Involving Matrix Creator, Raspberry Pi and PC
 - Repository Contains:
 	- Matrix HAL library (https://github.com/matrix-io/matrix-creator-hal)
-	- Customized 
 	- fftw3.h header
 
 ## Requirements

@@ -15,7 +15,7 @@ class RecordStream(threading.Thread):
         out_sound.setparams((8, 2, 16000, 0, 'NONE', 'not compressed'))
 
         connection = socket.socket()
-        connection.connect(("192.168.1.14", 8000))
+        connection.connect(("192.168.0.101", 8000))
 
         print "connection established, recording..."
 

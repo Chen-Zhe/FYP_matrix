@@ -82,7 +82,6 @@ int main() {
 	for (auto& led : ledRing.Image.leds) { led.red = 0; led.green = 0; led.blue = 0; }
 	ledRing.Driver.Write(&ledRing.Image);
 
-	ledRing.Driver.Write(&ledRing.Image);
 	microphoneArray.Setup(&bus);
 
 	while (networkConnected){
@@ -116,7 +115,6 @@ int main() {
 	sleep(1);
 
 	for (auto& led : ledRing.Image.leds) { led.red = 0; led.green = 0; led.blue = 0; }
-	ledRing.Driver.Write(&ledRing.Image);
 	ledRing.Driver.Write(&ledRing.Image);
 
 	return 0;

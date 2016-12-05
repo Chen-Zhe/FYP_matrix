@@ -53,8 +53,6 @@ int main() {
 		pthread_mutex_unlock(&bufferMutex[buffer_switch]);
 		buffer_switch = (buffer_switch + 1) % 2;
 	}
-
-
 }
 
 void *voiceActivityDetector(void *null) {

@@ -37,6 +37,21 @@
     <ClCompile Include="main\VAD.cpp">
       <Filter>main</Filter>
     </ClCompile>
+    <ClCompile Include="doa\CFFTW.cpp">
+      <Filter>Library\DOA</Filter>
+    </ClCompile>
+    <ClCompile Include="doa\CGccPhat.cpp">
+      <Filter>Library\DOA</Filter>
+    </ClCompile>
+    <ClCompile Include="doa\CSVD.cpp">
+      <Filter>Library\DOA</Filter>
+    </ClCompile>
+    <ClCompile Include="doa\Doa.cpp">
+      <Filter>Library\DOA</Filter>
+    </ClCompile>
+    <ClCompile Include="doa\DoaFuncs.cpp">
+      <Filter>Library\DOA</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="main">
@@ -50,6 +65,9 @@
     </Filter>
     <Filter Include="Library\libsocket">
       <UniqueIdentifier>{e2d5b9d2-8c80-4eea-ad3d-a610c66a301b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\DOA">
+      <UniqueIdentifier>{97c9385e-857a-42d3-8032-5e144451b60d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -190,6 +208,24 @@
     </ClInclude>
     <ClInclude Include="matrix-hal\cpp\driver\microphone_array_location.h">
       <Filter>Library\Matrix-HAL</Filter>
+    </ClInclude>
+    <ClInclude Include="doa\CFFTW.h">
+      <Filter>Library\DOA</Filter>
+    </ClInclude>
+    <ClInclude Include="doa\CGccPhat.h">
+      <Filter>Library\DOA</Filter>
+    </ClInclude>
+    <ClInclude Include="doa\Doa.h">
+      <Filter>Library\DOA</Filter>
+    </ClInclude>
+    <ClInclude Include="doa\DoaFuncs.h">
+      <Filter>Library\DOA</Filter>
+    </ClInclude>
+    <ClInclude Include="doa\nr3.h">
+      <Filter>Library\DOA</Filter>
+    </ClInclude>
+    <ClInclude Include="doa\svd.h">
+      <Filter>Library\DOA</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

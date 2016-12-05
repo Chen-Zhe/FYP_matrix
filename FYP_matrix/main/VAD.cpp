@@ -51,7 +51,7 @@ int main() {
 		}
 		pthread_mutex_lock(&bufferMutex[(buffer_switch + 1) % 2]);
 		pthread_mutex_unlock(&bufferMutex[buffer_switch]);
-		std::cout << "Buffer " << buffer_switch << " Recorded" << std::endl;
+		//std::cout << "Buffer " << buffer_switch << " Recorded" << std::endl;
 		buffer_switch = (buffer_switch + 1) % 2;
 	}
 
@@ -71,17 +71,17 @@ void *voiceActivityDetector(void *null) {
 	double th2 = fac2*nf2;
 
 	double tge1;
-	uint32_t init = 0;
+	int32_t init = 20;
 
 	while (true) {
 		pthread_mutex_lock(&bufferMutex[bufferSwitch]);
 
 		tge1 = sqrt(fabs(teagerEnergy(buffer[bufferSwitch])));
 
-		if (tge1 < th1 || init < 20) {
+		if (tge1 < th1 || init > 0) {
 			if (tge1 < nf1) alpha = 0.98;
 			else alpha = 0.9;
-			init++;
+			init--;
 			nf1 = fmin(alpha*nf1 + (1 - alpha)*tge1, 0.02);
 		}
 		
@@ -98,7 +98,7 @@ void *voiceActivityDetector(void *null) {
 		}
 
 		pthread_mutex_unlock(&bufferMutex[bufferSwitch]);
-		std::cout << "Buffer " << bufferSwitch << " Sent" << std::endl;
+		//std::cout << "Buffer " << bufferSwitch << " Sent" << std::endl;
 		bufferSwitch = (bufferSwitch + 1) % 2;
 	}
 }

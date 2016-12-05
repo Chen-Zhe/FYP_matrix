@@ -1,6 +1,5 @@
 #include "CGccPhat.h"
 #include <string.h>
-#include <assert.h>
 #include <math.h>
 #include <stdlib.h>
 
@@ -24,7 +23,7 @@ CGccPhat::~CGccPhat()
 
 int CGccPhat::init_N(int v_N, int v_range)
 {
-	assert(initFlag == 0);
+	if (initFlag != 0) throw("error");
 	N = v_N;
 	N_2p1 = N/2+1;
 	range = v_range;

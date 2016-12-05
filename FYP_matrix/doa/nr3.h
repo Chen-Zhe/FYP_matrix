@@ -59,8 +59,7 @@ inline void SWAP(T &a, T &b)
 // exception handling
 
 #ifndef _USENRERRORCLASS_
-#define throw(message) \
-{printf("ERROR: %s\n     in file %s at line %d\n", message,__FILE__,__LINE__); throw(1);}
+#define throw(message) {printf("ERROR:%s\n",message); throw(1);}
 #else
 struct NRerror {
 	char *message;

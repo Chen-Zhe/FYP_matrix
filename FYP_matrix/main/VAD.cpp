@@ -51,11 +51,8 @@ int main() {
 		}
 		pthread_mutex_lock(&bufferMutex[(buffer_switch + 1) % 2]);
 		pthread_mutex_unlock(&bufferMutex[buffer_switch]);
-		//std::cout << "Buffer " << buffer_switch << " Recorded" << std::endl;
 		buffer_switch = (buffer_switch + 1) % 2;
 	}
-
-
 }
 
 void *voiceActivityDetector(void *null) {
@@ -98,7 +95,6 @@ void *voiceActivityDetector(void *null) {
 		}
 
 		pthread_mutex_unlock(&bufferMutex[bufferSwitch]);
-		//std::cout << "Buffer " << bufferSwitch << " Sent" << std::endl;
 		bufferSwitch = (bufferSwitch + 1) % 2;
 	}
 }

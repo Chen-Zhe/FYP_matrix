@@ -1,6 +1,5 @@
 #include "CFFTW.h"
 #include <string.h>
-#include <assert.h>
 #include <math.h>
 
 #define PI 3.14159265358979323
@@ -75,7 +74,7 @@ CFFTW::evaluate_plan()
 void
 CFFTW::update_input_r2c(float *tmp_in, int v_N)
 {
-	assert(v_N= N);
+	if(v_N != N) throw("error");
 	memcpy(in_float, tmp_in,  sizeof(float)*N);
 }
 
@@ -83,7 +82,7 @@ CFFTW::update_input_r2c(float *tmp_in, int v_N)
 void
 CFFTW::update_input_c2r(fftwf_complex* tmp_in, int v_N)
 {
-	assert(v_N= N);
+	if(v_N != N) throw("error");
 	memcpy(in_complex, tmp_in, sizeof(fftwf_complex)*N_2p1);
 }
 
@@ -187,7 +186,7 @@ CHammingWin::~CHammingWin()
 void
 CHammingWin::apply(float *v, int vN)
 {
- assert(vN==N);
+ if(vN!=N) throw("error");
  for (int i=0; i < N; i++)
 	  v[i] = v[i]*w[i];
 }

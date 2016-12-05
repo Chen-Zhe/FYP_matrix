@@ -5,7 +5,6 @@
 #include <math.h>
 #include <float.h>
 #include <errno.h>
-#include <assert.h>
 #include <string.h>
 #include <sys/types.h>
 #include <time.h>

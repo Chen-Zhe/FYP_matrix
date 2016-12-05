@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
-#include <assert.h>
 #include <string.h>
 #include <sys/types.h>
 #include <math.h>
@@ -51,7 +50,7 @@ void conj_array_multiplication(COMPLEX *arr1, COMPLEX *arr2, int size, COMPLEX* 
 void denormalize(COMPLEX *G12, int size, COMPLEX *G);
 void denormalize_conj_array_multiplication(COMPLEX *arr1, COMPLEX *arr2, int size, COMPLEX *G,float *pSpecWeights);
 //void getrealafterIFFT(COMPLEX *G, int size, COMPLEX *IFFT, float* g);
-void getrealafterIFFT(COMPLEX *G, int size,fftw_complex *fftwin, double *IFFT, float* g);
+//void getrealafterIFFT(COMPLEX *G, int size,fftw_complex *fftwin, double *IFFT, float* g);
 void fftshift(float *x, int size, float *y);
 void flipud(float *x, int size, float *y);
 float GetMaxValueIndex(float *g, int first, int last);

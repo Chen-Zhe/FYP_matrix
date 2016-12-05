@@ -211,7 +211,8 @@ void getrealafterIFFT(COMPLEX *G, int size, COMPLEX *IFFT, float* g)
 	ifft_C(G, size, IFFT, size);
 	complex2real(IFFT, g, size);
 }
-*/
+
+
 void getrealafterIFFT(COMPLEX *G, int size,fftw_complex *fftwin, double *IFFT, float* g)
 {
 	complex2fftwcomplex(G, fftwin, size);
@@ -220,7 +221,7 @@ void getrealafterIFFT(COMPLEX *G, int size,fftw_complex *fftwin, double *IFFT, f
 	fftw_destroy_plan(p);
 	double_to_float_array(g, IFFT, size, size);
 }
-
+*/
 void fftshift(float *x, int size, float *y)
 {
 	int size2 = size/2;

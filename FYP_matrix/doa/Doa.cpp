@@ -10,42 +10,53 @@
 #include <sys/types.h>
 #include <time.h>
 
-//end of copy
-
 using namespace std;
 
-//-------------------------------------------------------------------------
-//	@remarks:
-//		A Processor must implement 2 ways of constructing an instance:
-//			- using a public constructor
-//			- using the create() static function to auto configure the class's 
-//				private properties from an INI file
-//-------------------------------------------------------------------------
 Doa::Doa(int samplingRate, int nChannels, ulong windowSize, ulong shiftSize)
 :	samplingRate_(samplingRate), nChannels_(nChannels), windowSize_(windowSize), shiftSize_(shiftSize)	
 
 {
+   /*
+   int samplingRate = 48000
+   int nChannels = 8
+   ulong windowSize = 46080
+   ulong shiftSize = 7680
+   */
+   numMics = 8;
 
-#ifdef _DEBUG
-   cout	<< "Created Doa: "
-      << " samplingRate=" << samplingRate
-      << " nChannels=" << nChannels
-      << " windowSize=" << windowSize
-      << " shiftSize=" << shiftSize
-      << endl;
-#endif
+   micPos = new float*[this->numMics];
 
+   float mic0Position[3] = { +010.7, -004.2, -017.9 };
+   float mic1Position[3] = { +005.0, +005.1, -007.3 };
+   float mic2Position[3] = { +000.0, +000.0, +000.0 };
+   float mic3Position[3] = { -005.0, +005.1, -007.3 };
+   float mic4Position[3] = { -010.7, -004.2, -017.9 };
+   float mic5Position[3] = { +010.1, -016.2, -017.8 };
+   float mic6Position[3] = { +000.0, -018.1, -005.3 };
+   float mic7Position[3] = { -010.1, -016.2, -017.8 };
+
+   micPos[0] = mic0Position;
+   micPos[1] = mic1Position;
+   micPos[2] = mic2Position;
+   micPos[3] = mic3Position;
+   micPos[4] = mic4Position;
+   micPos[5] = mic5Position;
+   micPos[6] = mic6Position;
+   micPos[7] = mic7Position;
+  
+   inLookAngleRange = 16;
+   searchRange = 200;
+   peakToSecondPeakRatio = 0;
+   doaDetectThreshold = 0;
+   minNumMicPairs = 0;
+   numMaxPrevFrames = 1;
+   numMinPrevFrames = 1;
+   nonDOAFrames = 0;
+   numsTheta1 = 2 * 90 + 1;
+   numsTheta2 = 2 * 90 + 1;
 }
 Doa::~Doa() 
 {
-   // TODO: clear all resources allocated during constructor
-   for(int i=0; i<numMicPairs; i++)
-   {                  
-      for (int j=0; j<=2*delay_range; j++)                  
-         fprintf(fp,"%f\t",accGCCTable[i][j]);               
-                
-     fprintf(fp,"\n");
-   }   
 
    delete [] r_GCC_range;
 
@@ -68,11 +79,6 @@ Doa::~Doa()
    delete [] vect_theta2;
    delete [] selectedPairs;
    
-   fclose(fp);
-
-
-   delete udp;
-   delete brain;
 }
 
 
@@ -94,65 +100,6 @@ bool checkMicList(int* micIds, int length)
 }
 
 //-------------------------------------------------------------------------
-//	@summary: 
-//		Static function for creating an instance of Doa. 
-//
-//	@parameter ini: 
-//		.INI file reader, containing the configuration script for creating the instance
-//
-//	@parameter instanceName:
-//		specifies which section of .INI file to look for Doa's parameters
-//
-//	@output:
-//		a reference to the created instance of Doa
-//-------------------------------------------------------------------------
-Processor* Doa::create(CIniFile* ini, std::string instanceName)
-{
-   //
-   // read parameters from ini file here
-   //
-   int samplingRate = ini->GetValueI(instanceName, "SamplingRate");
-   int nChannels = ini->GetValueI(instanceName, "NumChannels");
-   ulong windowSize = ini->GetValueI(instanceName, "WindowSize");
-   ulong shiftSize = ini->GetValueI(instanceName, "ShiftSize");
-
-   Doa* doa = new Doa(samplingRate, nChannels, windowSize, shiftSize);
-
-   doa->numMics	= ini->GetValueI(instanceName, "numMics");	
-
-   doa->micPos = new float*[8];
-   int unused; // ignore it
-   doa->micPos[0] = ini->GetValueArrayF(instanceName, "Mic00", unused);
-   doa->micPos[1] = ini->GetValueArrayF(instanceName, "Mic01", unused);
-   doa->micPos[2] = ini->GetValueArrayF(instanceName, "Mic02", unused);
-   doa->micPos[3] = ini->GetValueArrayF(instanceName, "Mic03", unused);
-   doa->micPos[4] = ini->GetValueArrayF(instanceName, "Mic04", unused);
-   doa->micPos[5] = ini->GetValueArrayF(instanceName, "Mic05", unused);
-   doa->micPos[6] = ini->GetValueArrayF(instanceName, "Mic06", unused);
-   doa->micPos[7] = ini->GetValueArrayF(instanceName, "Mic07", unused);
-
-   doa->inLookAngleRange = ini->GetValueI(instanceName, "inLookAngleRange");
-   doa->searchRange = ini->GetValueI(instanceName, "searchRange");
-   doa->peakToSecondPeakRatio = ini->GetValueF(instanceName, "peakToSecondPeakRatio");
-   doa->doaDetectThreshold = ini->GetValueF(instanceName, "doaDetectThreshold");
-   doa->serverConnect = ini->GetValueI(instanceName, "serverConnect");
-   doa->serverPort = ini->GetValueI(instanceName, "serverPort");
-   doa->ipAddress = ini->GetValue(instanceName, "ipAddress");
-   doa->minNumMicPairs = ini->GetValueI(instanceName, "minNumMicPairs");
-   doa->numMaxPrevFrames = ini->GetValueI(instanceName, "numMaxPrevFrames");
-   doa->numMinPrevFrames = ini->GetValueI(instanceName, "numMinPrevFrames");
-   doa->nonDOAFrames = 0;
-   doa->numsTheta1 = 2*ini->GetValueI(instanceName, "numsTheta1") + 1;
-   doa->numsTheta2 = 2*ini->GetValueI(instanceName, "numsTheta2") + 1;
-
-   // check parameters validity here
-   //
-   if(samplingRate <=0 || nChannels<=0 || windowSize <=0 || shiftSize<=0) 
-      throw exception("SamplingRate, NumChannels, WindowSize, ShiftSize must be greater than zero.");
-
-   return doa;
-}
-//-------------------------------------------------------------------------
 //	@summary:
 //		Initializes the buffers and/or resources required. This method will be 
 //		called just before entering the processing loop
@@ -166,21 +113,7 @@ void Doa::OnInitialization()
       windows.push_back(new float[windowSize_]);
       memset(windows[i], 0, sizeof(float)*windowSize_);		
    }
-   InitParameters();
-
-   Affinity(0x01);
-
-   udp= new ClientSocket("127.0.0.1", 12345, true, 10, IPPROTO_UDP);
-   brain = new ClientSocket(ipAddress.c_str(), serverPort, true, 10, IPPROTO_TCP);	
-   if (serverConnect==1)
-   {
-      printf("Connecting to the server ...\n");
-      brain->Connect();
-      printf("Connected!!\n");
-   }
-
-   fp = NULL;
-   fopen_s(&fp,"delays.txt","w");      
+   InitParameters();   
 }
 
 void Doa::InitParameters()
@@ -203,7 +136,6 @@ void Doa::InitParameters()
    //------------------------------------------------------------
    //added for search space method   
    delay_range = searchRange;	   //constrain the delay based on mic array size	
-   Fs = 48000;
    creat_delayTable();
 }
 
@@ -277,10 +209,6 @@ void Doa::creat_delayTable()
 
       count = 0;
       float tmp_val = 0.0;
-      char *opFileName = "delayTable.txt";
-      FILE *opfile = NULL;
-      fopen_s(&opfile, opFileName,"w");
-
 
       for (int row = 0; row < numsTheta1; row ++)
          for (int col = 0; col < numsTheta2; col ++)
@@ -292,13 +220,11 @@ void Doa::creat_delayTable()
                tmp_val = 0.0;
                for (int c = 0; c < 3; c++)
                   tmp_val += P_xx[p][c] * fabs(vectU[c]);
-               delayTable[count][p] = (int) (-tmp_val * Fs/SOUND_SPEED);
-               fprintf(opfile,"%d  ", delayTable[count][p]);
+               delayTable[count][p] = (int) (-tmp_val * samplingRate_/SOUND_SPEED);
+               
             }
             count++;
-            fprintf(opfile,"\n");
          }
-         fclose(opfile);
 }
 
 
@@ -334,40 +260,27 @@ void Doa::creat_delayTable()
 //		e.g.	Inputs[0]->processed = Inputs[0]->length; // indicate that all input data has been consumed
 //					Outputs[0]->processed = 1;								// indicate that the buffer has produced 1 output item
 //-------------------------------------------------------------------------
-void Doa::OnProcessing()
+DoaOutput Doa::OnProcessing(float** buffer)
 {
-
 #ifdef _DEBUG_DOA
-   clock_t start, end;
-   start = clock();
-   printf("Doa%d\n;",ProcessorId());	// print out the processor's signature during debug
+	clock_t start, end;
+	start = clock();
 #endif
-
-   int speechCount = 0;
-   int vadChannel = 0, vadCount;
-   float goodDOA;
 
    //
    // prepare your input/output streams here using Inputs and Outputs vectors
    //
    for(int i=0; i<nChannels_; ++i)
    {
-      float* input = (float*)Inputs[i]->data;
-      if(Inputs[i]->length < shiftSize_) throw exception("wrong buffer size");
+      float* input = buffer[i];
+      //if(Inputs[i]->length < shiftSize_) throw exception("wrong buffer size");
 
       ulong reservedSize = windowSize_ - shiftSize_;	
       memmove(windows[i], windows[i]+shiftSize_, reservedSize << 2);	// copy reservedSize from the 2nd part to the 1st part (use <<2 for faster multiplied by sizeof(float))		
       memmove(windows[i] + reservedSize, input, shiftSize_ <<2);	
    }
   
-   short* vadOutput = (short*)Inputs[numMics]->data;
-
-   DoaOutput* output = (DoaOutput*)Outputs[0]->data;
-
-   // main processing 
-   hasSpeech = vadOutput[0] > 0;
-   string msg = format("VAD", hasSpeech);
-   udp->SendTo(msg);
+   DoaOutput output;
    
    // get ready the fft of each channel's data first!nChannels_
    for(int i=0; i<nChannels_; i++)
@@ -377,33 +290,14 @@ void Doa::OnProcessing()
       sig_fft[i].evaluate_plan();
    } 
 
-   goodDOA = ProcessDOA();		
-   if (hasSpeech)
-   {
-      output->hasDOA = goodDOA;	
-   }
-   else
-      output->hasDOA = false;
+   bool hasDOA = ProcessDOA();
+   output.hasDOA = hasDOA;
 
-   if (output->hasDOA)
-   {
-      output->theta1 = theta1;
-      output->theta2 = theta2;
+   if (hasDOA){
+      output.theta1 = theta1;
+      output.theta2 = theta2;
    }
-  
-   msg = format("hasDOA", output->hasDOA);
-   udp->SendTo(msg);
-
-   if (output->hasDOA)
-   {
-      msg = format("theta1", output->theta1);
-      udp->SendTo(msg);
-      msg = format("theta2", output->theta2);
-      udp->SendTo(msg);
-      msg = format("{GRAPH}", output->theta1,output->theta2);
-      udp->SendTo(msg);
-   }
-
+/*
    if(output->hasDOA && serverConnect==1)
    {
       float theta1_sent;
@@ -418,15 +312,9 @@ void Doa::OnProcessing()
          theta1_sent = (float)0.0;
       msg = formatBrainMsg(theta1_sent, output->theta2,output->theta1);      
       brain->SendLine(msg);
+
    }
-
-   //
-   // update the number of input/output items processed (read/written)
-   //
-   for each(StreamRecord* input in Inputs)
-      input->processed = input->length;
-
-   Outputs[0]->processed = 1;
+   */
 
 #ifdef _DEBUG_DOA
    end = clock();
@@ -434,6 +322,7 @@ void Doa::OnProcessing()
    printf("DOA took %.2f milliseconds.\n", elapsed);
 #endif
 
+   return output;
 }
 
 bool Doa::ProcessDOA()
@@ -446,10 +335,7 @@ bool Doa::ProcessDOA()
    {
       for (int j = 1; j <= Ref_vect[i]; j++)
       {
-         gccPhat_N[0].evaluate_FFT_gccPhat(sig_fft[i+j].get_pOut
-		 
-		 
-		 (), sig_fft[i].get_pOutComplex(), windowSize_);
+         gccPhat_N[0].evaluate_FFT_gccPhat(sig_fft[i+j].get_pOutComplex(), sig_fft[i].get_pOutComplex(), windowSize_);
          gccPhat_N[0].fn_extractGccStats(GCCTable, delay_range, pairs);
 
          if (hasSpeech)

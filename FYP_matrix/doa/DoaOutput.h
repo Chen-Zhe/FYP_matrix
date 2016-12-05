@@ -1,8 +1,6 @@
 #pragma once
 
-#include "api.h"	// declaration of API export/import symbol
-
-struct DOA_API DoaOutput 
+struct DoaOutput 
 {
 	bool  hasDOA;
 	float theta1;	

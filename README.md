@@ -5,6 +5,7 @@
 - Repository Contains:
 	- Matrix HAL library (https://github.com/matrix-io/matrix-creator-hal)
 	- fftw3 Fast Fourier Transform library header
+	- GNU Scientific Library header
 
 ## Requirements
 - Matrix Creator Base (https://github.com/matrix-io/matrix-creator-quickstart/wiki/2.-Getting-Started)
@@ -15,3 +16,4 @@
 - Install FFTW3 dev from http://www.fftw.org/. Need to use `$ ./configure --enable-shared`
 - Install FFTW3 dev: `$ sudo apt-get install libfftw3-dev`
 - Install libsocket library from git repository (https://github.com/dermesser/libsocket)
+- Install GNU Scientific Library (GSL) from git repository (https://github.com/ampl/gsl)

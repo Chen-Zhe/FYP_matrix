@@ -1,11 +1,6 @@
 #ifndef _NR3_H_
 #define _NR3_H_
 
-//#define _CHECKBOUNDS_ 1
-//#define _USESTDVECTOR_ 1
-//#define _USENRERRORCLASS_ 1
-//#define _TURNONFPES_ 1
-
 // all the system #include's we'll ever need
 #include <fstream>
 #include <cmath>
@@ -17,7 +12,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
-#include <fcntl.h>
 #include <string.h>
 #include <ctype.h>
 

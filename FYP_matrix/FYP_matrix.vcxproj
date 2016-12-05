@@ -35,7 +35,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <RemoteCppCompileToolExe>g++</RemoteCppCompileToolExe>
-    <RemoteLdToolExe>g++ -lpthread -lsocket++ -lfftw3f</RemoteLdToolExe>
+    <RemoteLdToolExe>g++ -lpthread -lsocket++ -lfftw3f -l:libgsl.a</RemoteLdToolExe>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <Link>
@@ -83,6 +83,7 @@
     <ClInclude Include="doa\CGccPhat.h" />
     <ClInclude Include="doa\Doa.h" />
     <ClInclude Include="doa\DoaFuncs.h" />
+    <ClInclude Include="doa\DoaOutput.h" />
     <ClInclude Include="doa\nr3.h" />
     <ClInclude Include="doa\svd.h" />
     <ClInclude Include="lib-headers\fftw3.h" />

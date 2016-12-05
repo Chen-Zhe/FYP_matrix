@@ -17,6 +17,10 @@
 
 #include "fftw3.h"
 
+struct COMPLEX{
+	double re;
+	double im;
+};
 
 #define MAXINTVALUE	1000000
 #define epsilon6	(float)1/1000000
@@ -46,7 +50,7 @@ void array_multiplication(COMPLEX *arr1, COMPLEX *arr2, int size, COMPLEX* resul
 void conj_array_multiplication(COMPLEX *arr1, COMPLEX *arr2, int size, COMPLEX* result);
 void denormalize(COMPLEX *G12, int size, COMPLEX *G);
 void denormalize_conj_array_multiplication(COMPLEX *arr1, COMPLEX *arr2, int size, COMPLEX *G,float *pSpecWeights);
-void getrealafterIFFT(COMPLEX *G, int size, COMPLEX *IFFT, float* g);
+//void getrealafterIFFT(COMPLEX *G, int size, COMPLEX *IFFT, float* g);
 void getrealafterIFFT(COMPLEX *G, int size,fftw_complex *fftwin, double *IFFT, float* g);
 void fftshift(float *x, int size, float *y);
 void flipud(float *x, int size, float *y);

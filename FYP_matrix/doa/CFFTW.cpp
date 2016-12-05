@@ -1,6 +1,4 @@
-#include "stdafx.h"
 #include "CFFTW.h"
-#include <memory.h>
 #include <string.h>
 #include <assert.h>
 #include <math.h>
@@ -98,15 +96,14 @@ CFFTW::readWisdom(char *infileName)
   int idx = 0;
   tmpBuf[idx] = 0;
 
-  FILE *infile = NULL;
-  fopen_s(&infile, infileName,"r");
+  FILE *infile = fopen(infileName,"r");
   if (infile == NULL) return;
 
   while (feof(infile) == 0)
   {
 	  fgets(tmpLine, 255, infile);
 	  if (strlen(tmpLine) > 0)
-		  strcat_s(tmpBuf, 10000, tmpLine);
+		  strncat(tmpBuf, tmpLine, 10000);
 	  idx += (int) (strlen(tmpLine));
   }
 	fftwf_import_wisdom_from_string(tmpBuf);	
@@ -118,8 +115,7 @@ void
 CFFTW::writeWisdom(char *opFileName)
 {
 	char *planStr = fftwf_export_wisdom_to_string();
-	FILE *opfile = NULL;
-	fopen_s(&opfile, opFileName,"w");
+	FILE *opfile = fopen(opFileName,"w");
 	fprintf(opfile,"%s", planStr);
 	fclose(opfile);
 	fftwf_free(planStr);

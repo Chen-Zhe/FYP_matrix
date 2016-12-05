@@ -1,7 +1,6 @@
 // FileName: CSVD.cpp
 // Author: Numerical Recipes
 
-#include "stdafx.h"
 #include "svd.h"
 
 void SVD::initSVD(int m_, int n_)

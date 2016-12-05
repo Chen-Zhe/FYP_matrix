@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "Doa.h"
 
 #include <stdio.h>
@@ -14,53 +13,7 @@
 //end of copy
 
 using namespace std;
-using namespace micarray;
 
-string format(string var_name, bool value)
-{
-   char buff[100];
-   sprintf(buff, "%s,%s", var_name.c_str(), value?"true":"false");
-   string msg(buff, strlen(buff));
-   return msg;
-}
-string format(string var_name, int value)
-{
-   char buff[100];
-   sprintf(buff, "%s,%d", var_name.c_str(), value);
-   string msg(buff, strlen(buff));
-   return msg;
-}
-string format(string var_name, float value)
-{
-   char buff[100];
-   sprintf(buff, "%s,%f", var_name.c_str(), value);
-   string msg(buff, strlen(buff));
-   return msg;
-}
-
-string format(string var_name, float value1, float value2)
-{
-   char buff[100];
-   sprintf(buff, "%s,%f,%f", var_name.c_str(), value1,value2);
-   string msg(buff, strlen(buff));
-   return msg;
-}
-
-string formatBrainMsg(float theta1, float theta2, float theta1_org)
-{
-   char buff[100];
-   sprintf(buff, "%f,%f,%f", theta1, theta2, theta1_org);
-   string msg(buff, strlen(buff));
-   return msg;
-}
-
-string formatBrainMsg(float theta1, float theta2, bool VAD_output)
-{
-   char buff[100];
-   sprintf(buff, "%f,%f,%b", theta1, theta2, VAD_output);
-   string msg(buff, strlen(buff));
-   return msg;
-}
 //-------------------------------------------------------------------------
 //	@remarks:
 //		A Processor must implement 2 ways of constructing an instance:
@@ -86,7 +39,7 @@ Doa::Doa(int samplingRate, int nChannels, ulong windowSize, ulong shiftSize)
 Doa::~Doa() 
 {
    // TODO: clear all resources allocated during constructor
-   for (int i=0; i<numMicPairs; i++)
+   for(int i=0; i<numMicPairs; i++)
    {                  
       for (int j=0; j<=2*delay_range; j++)                  
          fprintf(fp,"%f\t",accGCCTable[i][j]);               
@@ -96,7 +49,7 @@ Doa::~Doa()
 
    delete [] r_GCC_range;
 
-   for (int i=0; i<numMicPairs; i++)
+   for(int i=0; i<numMicPairs; i++)
    {
       delete [] GCCTable[i];
       delete [] accGCCTable[i];
@@ -493,7 +446,10 @@ bool Doa::ProcessDOA()
    {
       for (int j = 1; j <= Ref_vect[i]; j++)
       {
-         gccPhat_N[0].evaluate_FFT_gccPhat(sig_fft[i+j].get_pOutComplex(), sig_fft[i].get_pOutComplex(), windowSize_);
+         gccPhat_N[0].evaluate_FFT_gccPhat(sig_fft[i+j].get_pOut
+		 
+		 
+		 (), sig_fft[i].get_pOutComplex(), windowSize_);
          gccPhat_N[0].fn_extractGccStats(GCCTable, delay_range, pairs);
 
          if (hasSpeech)

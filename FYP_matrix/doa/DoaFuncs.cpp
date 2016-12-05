@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "DoaFuncs.h"
 
 
@@ -206,12 +205,13 @@ void denormalize_conj_array_multiplication(COMPLEX *arr1, COMPLEX *arr2, int siz
 	}
 }
 
+/*
 void getrealafterIFFT(COMPLEX *G, int size, COMPLEX *IFFT, float* g)
 {
 	ifft_C(G, size, IFFT, size);
 	complex2real(IFFT, g, size);
 }
-
+*/
 void getrealafterIFFT(COMPLEX *G, int size,fftw_complex *fftwin, double *IFFT, float* g)
 {
 	complex2fftwcomplex(G, fftwin, size);

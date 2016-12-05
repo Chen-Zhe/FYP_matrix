@@ -1,12 +1,10 @@
 #pragma once
 
-#include "api.h"	// declaration of API export/import symbol
 #include "svd.h"
 #include "DoaFuncs.h"
 #include "CFFTW.h"
 #include "CGccPhat.h"
 #include "DoaOutput.h"
-#include "socket.h"
 #include <list>
 
 const int SOUND_SPEED=343;
@@ -14,7 +12,7 @@ const int MAX_CHANNEL=8;
 const float PI = 3.141592;
 const float NA = -1000000;
 
-class DOA_API Doa : public micarray::Processor
+class Doa
 {
 public:
    Doa(int samplingRate, int nChannels, ulong windowSize, ulong shiftSize);

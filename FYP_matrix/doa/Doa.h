@@ -18,7 +18,6 @@ public:
 	Doa(int samplingRate, int nChannels, ulong windowSize, ulong shiftSize);
 	virtual ~Doa();
 
-protected:
 	void OnInitialization();
 	DoaOutput OnProcessing(float** buffer);
 	void OnTermination();

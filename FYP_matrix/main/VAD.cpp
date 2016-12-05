@@ -1,21 +1,26 @@
 #include <pthread.h>
 #include <iostream>
 #include <cmath>
+#include <unistd.h>
 #include "../matrix-hal/cpp/driver/microphone_array.h"
 #include "../matrix-hal/cpp/driver/wishbone_bus.h"
 #include "LedController.h"
+#include "../doa/Doa.h"
 
 #define FRAME_SIZE 384
 
 namespace matrixCreator = matrix_hal;
 
-double teagerEnergy(double frame[]);
+double teagerEnergy(float frame[]);
 void *voiceActivityDetector(void *null);
+void *DOAcalculation(void *null);
 
-double buffer[2][FRAME_SIZE];
+float buffer[2][8][FRAME_SIZE];
 pthread_mutex_t bufferMutex[2] = { PTHREAD_MUTEX_INITIALIZER };
 
 LedController *LedCon;
+
+bool voiceDetected = false;
 
 int main() {
 	matrixCreator::WishboneBus bus;
@@ -34,7 +39,10 @@ int main() {
 	pthread_mutex_lock(&bufferMutex[buffer_switch]);
 
 	pthread_t VAD;//spawn networking thread and pass the connection
+	pthread_t DOA;
+
 	pthread_create(&VAD, NULL, voiceActivityDetector, (void *)NULL);
+	pthread_create(&DOA, NULL, DOAcalculation, (void *)NULL);
 
 	microphoneArray.Setup(&bus);
 
@@ -45,7 +53,9 @@ int main() {
 			microphoneArray.Read();
 
 			for (uint32_t s = 0; s < microphoneArray.NumberOfSamples(); s++) {
-				buffer[buffer_switch][step] = (double)microphoneArray.At(s, 0)/32768.0;
+				for (uint32_t c = 0; c < microphoneArray.Channels(); c++) {
+					buffer[buffer_switch][c][step] = (float)microphoneArray.At(s, c) / 32768.0;
+				}
 				step++;
 			}
 		}
@@ -73,7 +83,7 @@ void *voiceActivityDetector(void *null) {
 	while (true) {
 		pthread_mutex_lock(&bufferMutex[bufferSwitch]);
 
-		tge1 = sqrt(fabs(teagerEnergy(buffer[bufferSwitch])));
+		tge1 = sqrt(fabs(teagerEnergy(buffer[bufferSwitch][0])));
 
 		if (tge1 < th1 || init > 0) {
 			if (tge1 < nf1) alpha = 0.98;
@@ -88,10 +98,12 @@ void *voiceActivityDetector(void *null) {
 		if (tge1 > th2) {
 			//voice activity detected
 			LedCon->updateLed();
+			voiceDetected = true;
 		}
 		else {
 			//no voice activity
 			LedCon->turnOffLed();
+			voiceDetected = false;
 		}
 
 		pthread_mutex_unlock(&bufferMutex[bufferSwitch]);
@@ -99,7 +111,7 @@ void *voiceActivityDetector(void *null) {
 	}
 }
 
-double teagerEnergy(double frame[]) {
+double teagerEnergy(float frame[]) {
 	double tgm = 0.0;
 
 	for (int32_t i = 0; i < FRAME_SIZE - 2; i++) {
@@ -111,4 +123,20 @@ double teagerEnergy(double frame[]) {
 	}
 
 	return tgm;
+}
+
+
+void *DOAcalculation(void *null) {
+	Doa DOA(16000,8,320,80);
+	DOA.OnInitialization();
+	DoaOutput result;
+
+	while (true) {
+		if (!voiceDetected) usleep(24000);
+		
+		result = DOA.OnProcessing(buffer[0]);
+
+
+	}
+
 }

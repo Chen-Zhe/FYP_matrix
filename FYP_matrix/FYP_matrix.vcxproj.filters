@@ -31,7 +31,10 @@
     <ClCompile Include="matrix-hal\dummy_sensor.cpp">
       <Filter>Library\Matrix-HAL</Filter>
     </ClCompile>
-    <ClCompile Include="main\RecordingStream.cpp">
+    <ClCompile Include="matrix-hal\mcu_firmware.cpp">
+      <Filter>Library\Matrix-HAL</Filter>
+    </ClCompile>
+    <ClCompile Include="main\VAD.cpp">
       <Filter>main</Filter>
     </ClCompile>
   </ItemGroup>
@@ -172,6 +175,21 @@
     </ClInclude>
     <ClInclude Include="lib-headers\fftw3.h">
       <Filter>Library</Filter>
+    </ClInclude>
+    <ClInclude Include="main\LedController.h">
+      <Filter>main</Filter>
+    </ClInclude>
+    <ClInclude Include="matrix-hal\cpp\driver\circular_queue.h">
+      <Filter>Library\Matrix-HAL</Filter>
+    </ClInclude>
+    <ClInclude Include="matrix-hal\cpp\driver\fw_data.h">
+      <Filter>Library\Matrix-HAL</Filter>
+    </ClInclude>
+    <ClInclude Include="matrix-hal\cpp\driver\mcu_firmware.h">
+      <Filter>Library\Matrix-HAL</Filter>
+    </ClInclude>
+    <ClInclude Include="matrix-hal\cpp\driver\microphone_array_location.h">
+      <Filter>Library\Matrix-HAL</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

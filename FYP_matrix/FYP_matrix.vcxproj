@@ -60,13 +60,14 @@
     </RemotePostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="main\RecordingStream.cpp" />
+    <ClCompile Include="main\VAD.cpp" />
     <ClCompile Include="matrix-hal\dummy_sensor.cpp" />
     <ClCompile Include="matrix-hal\everloop.cpp" />
     <ClCompile Include="matrix-hal\gpio_control.cpp" />
     <ClCompile Include="matrix-hal\humidity_sensor.cpp" />
     <ClCompile Include="matrix-hal\imu_sensor.cpp" />
     <ClCompile Include="matrix-hal\matrix_driver.cpp" />
+    <ClCompile Include="matrix-hal\mcu_firmware.cpp" />
     <ClCompile Include="matrix-hal\microphone_array.cpp" />
     <ClCompile Include="matrix-hal\pressure_sensor.cpp" />
     <ClCompile Include="matrix-hal\uv_sensor.cpp" />
@@ -97,18 +98,23 @@
     <ClInclude Include="lib-headers\libsocket\unixdgram.hpp" />
     <ClInclude Include="lib-headers\libsocket\unixserverdgram.hpp" />
     <ClInclude Include="lib-headers\libsocket\unixserverstream.hpp" />
+    <ClInclude Include="main\LedController.h" />
+    <ClInclude Include="matrix-hal\cpp\driver\circular_queue.h" />
     <ClInclude Include="matrix-hal\cpp\driver\creator_memory_map.h" />
     <ClInclude Include="matrix-hal\cpp\driver\dummy_data.h" />
     <ClInclude Include="matrix-hal\cpp\driver\dummy_sensor.h" />
     <ClInclude Include="matrix-hal\cpp\driver\everloop.h" />
     <ClInclude Include="matrix-hal\cpp\driver\everloop_image.h" />
+    <ClInclude Include="matrix-hal\cpp\driver\fw_data.h" />
     <ClInclude Include="matrix-hal\cpp\driver\gpio_control.h" />
     <ClInclude Include="matrix-hal\cpp\driver\humidity_data.h" />
     <ClInclude Include="matrix-hal\cpp\driver\humidity_sensor.h" />
     <ClInclude Include="matrix-hal\cpp\driver\imu_data.h" />
     <ClInclude Include="matrix-hal\cpp\driver\imu_sensor.h" />
     <ClInclude Include="matrix-hal\cpp\driver\matrix_driver.h" />
+    <ClInclude Include="matrix-hal\cpp\driver\mcu_firmware.h" />
     <ClInclude Include="matrix-hal\cpp\driver\microphone_array.h" />
+    <ClInclude Include="matrix-hal\cpp\driver\microphone_array_location.h" />
     <ClInclude Include="matrix-hal\cpp\driver\pressure_data.h" />
     <ClInclude Include="matrix-hal\cpp\driver\pressure_sensor.h" />
     <ClInclude Include="matrix-hal\cpp\driver\uv_data.h" />

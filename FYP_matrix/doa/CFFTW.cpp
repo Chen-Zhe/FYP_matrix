@@ -6,7 +6,7 @@
 
 CFFTW::CFFTW()
 {
- printf("ctor %x\n", this);
+ //printf("ctor %x\n", this);
  N = 0;
  p = NULL;
  in_float    = NULL;
@@ -19,8 +19,7 @@ CFFTW::CFFTW()
 
 CFFTW::~CFFTW()
 {
- printf("dtor %x\n", this);
-
+ //printf("dtor %x\n", this);
   fftwf_destroy_plan(p);
   fftwf_free(in_complex); 
   fftwf_free(out_complex);

@@ -22,7 +22,6 @@ Doa::Doa(int samplingRate, int nChannels, ulong windowSize, ulong shiftSize)
    ulong shiftSize = 7680
    */
    numMics = 8;
-
    micPos = new float*[this->numMics];
 
    float mic0Position[3] = { 19.708196, -47.579795, 0 };
@@ -44,7 +43,7 @@ Doa::Doa(int samplingRate, int nChannels, ulong windowSize, ulong shiftSize)
    micPos[7] = mic7Position;
   
    inLookAngleRange = 16;
-   searchRange = 200;
+   searchRange = 50;
    peakToSecondPeakRatio = 0;
    doaDetectThreshold = 0;
    minNumMicPairs = 0;
@@ -251,9 +250,9 @@ DoaOutput Doa::processBuffer(float** buffer)
       float* input = buffer[i];
       //if(Inputs[i]->length < shiftSize_) throw exception("wrong buffer size");
 
-      ulong reservedSize = windowSize_ - shiftSize_;	
+      ulong reservedSize = windowSize_ - shiftSize_;
       memmove(windows[i], windows[i]+shiftSize_, reservedSize << 2);	// copy reservedSize from the 2nd part to the 1st part (use <<2 for faster multiplied by sizeof(float))		
-      memmove(windows[i] + reservedSize, input, shiftSize_ <<2);	
+	  memmove(windows[i] + reservedSize, input, shiftSize_ <<2);	
    }
   
    DoaOutput output;
@@ -368,7 +367,7 @@ bool Doa::ProcessDOA()
       hasDOA = false;
    else 
       hasDOA = true;
-
+   std::cout << pairCount << std::endl;
    int search_idx;
    int maxIdx = 0;   
    float maxRatio = 0.0;   

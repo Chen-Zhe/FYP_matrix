@@ -57,7 +57,7 @@ int main() {
 
 			for (uint32_t s = 0; s < microphoneArray.NumberOfSamples(); s++) {
 				for (uint32_t c = 0; c < NUM_CHANNELS; c++) {
-					buffer[buffer_switch][c][step] = (float)microphoneArray.At(s, c);
+					buffer[buffer_switch][c][step] = (float)microphoneArray.At(s, c) / 32768.0;
 				}
 				step++;
 			}
@@ -84,7 +84,7 @@ void *voiceActivityDetector(void *null) {
 
 	double tge1;
 	int32_t noiseFrames = 20;
-	float normalizedFrame[FRAME_SIZE];
+	//float normalizedFrame[FRAME_SIZE];
 
 	char msg[4]="T";
 	struct mq_attr attr;
@@ -100,10 +100,11 @@ void *voiceActivityDetector(void *null) {
 	while (true) {
 		pthread_mutex_lock(&bufferMutex[bufferSwitch]);
 
+		/*
 		for (int i = 0; i < FRAME_SIZE; i++)
 			normalizedFrame[i] = buffer[bufferSwitch][0][i] / 32768.0;
-		
-		tge1 = sqrt(fabs(teagerEnergy(normalizedFrame)));
+		*/
+		tge1 = sqrt(fabs(teagerEnergy(buffer[bufferSwitch][0])));
 
 		if (tge1 < th1 || noiseFrames > 0) {
 			if (tge1 < nf1) alpha = 0.98;
@@ -120,7 +121,6 @@ void *voiceActivityDetector(void *null) {
 			if (doaController == 0) {
 				memcpy((void*)doaFrameBuffer, (void*)buffer[bufferSwitch], NUM_CHANNELS * FRAME_SIZE * sizeof(float));
 				doaController = 10;
-				std::cout << "msg" << std::endl;
 				mq_send(messageQueue, msg, 4, 0);
 			}
 		}
@@ -149,7 +149,7 @@ double teagerEnergy(float frame[]) {
 
 
 void *DOAcalculation(void *null) {
-	Doa DOA(16000,8,FRAME_SIZE,96);
+	Doa DOA(16000,8,FRAME_SIZE,0);
 	DOA.initialize();
 	
 	DoaOutput result;

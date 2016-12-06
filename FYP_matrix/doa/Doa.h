@@ -18,9 +18,9 @@ public:
 	Doa(int samplingRate, int nChannels, ulong windowSize, ulong shiftSize);
 	virtual ~Doa();
 
-	void initialize();
-	DoaOutput processBuffer(float** buffer);
-	void terminate();
+	void		initialize();
+	DoaOutput	processBuffer(float* buffer, int32_t samplesPerChannel);
+	void		terminate();
 
 private:
 
@@ -31,7 +31,6 @@ private:
 
 	vector<float*> windows;
 
-private:
 	CHammingWin  hammWin;  // creating a hammingWindow functions
 	CFFTW        sig_fft[MAX_CHANNEL];  // 8 mic's channels FFT
 	CGccPhat     gccPhat_N[MAX_CHANNEL];  // lets generate 8 pairs of GCC Phat mic00, mic01, mic02,..mic07
@@ -42,11 +41,8 @@ private:
 	int          gccMaxIdx[MAX_CHANNEL];
 
 	// copied from old code
-	string		ipAddress;
 	float**		micPos;
-	int			serverConnect;
-	int         serverPort;
-	float		   theta1, theta2;
+	float		theta1, theta2;
 	int         inLookAngleRange;
 	int         searchRange;
 	float       peakToSecondPeakRatio;
@@ -82,9 +78,8 @@ private:
 	int         numMaxPrevFrames;
 	int         numMinPrevFrames;
 	int         nonDOAFrames;
-	bool        hasSpeech;
 
-private:    // methods
+// methods
 	void		creat_delayTable();
 	bool		ProcessDOA();
 	float    findMedian(list<float> mlist);

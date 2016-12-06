@@ -22,16 +22,16 @@ Doa::Doa(int samplingRate, int nChannels, ulong windowSize, ulong shiftSize)
    ulong shiftSize = 7680
    */
    numMics = 8;
-   micPos = new float*[this->numMics];
+   micPos = new float*[numMics];
 
-   float mic0Position[3] = { 19.708196, -47.579795, 0 };
-   float mic1Position[3] = { -20.291803, -47.579795, 0 };
-   float mic2Position[3] = { -48.420204, -19.708196, 0 };
-   float mic3Position[3] = { -48.420204, 20.291803, 0 };
-   float mic4Position[3] = { -29.291803, 48.420204, 0 };
-   float mic5Position[3] = { 19.708196, 48.420204, 0 };
-   float mic6Position[3] = { 47.579795, 20.291803, 0 };
-   float mic7Position[3] = { 47.579795, -19.708196, 0 };
+   float mic0Position[3] = { 1.9708196, -4.7579795, 0 };
+   float mic1Position[3] = { -2.0291803, -4.7579795, 0 };
+   float mic2Position[3] = { -4.8420204, -1.9708196, 0 };
+   float mic3Position[3] = { -4.8420204, 2.0291803, 0 };
+   float mic4Position[3] = { -2.9291803, 4.8420204, 0 };
+   float mic5Position[3] = { 1.9708196, 4.8420204, 0 };
+   float mic6Position[3] = { 4.7579795, 2.0291803, 0 };
+   float mic7Position[3] = { 4.7579795, -1.9708196, 0 };
 
    micPos[0] = mic0Position;
    micPos[1] = mic1Position;
@@ -43,7 +43,7 @@ Doa::Doa(int samplingRate, int nChannels, ulong windowSize, ulong shiftSize)
    micPos[7] = mic7Position;
   
    inLookAngleRange = 16;
-   searchRange = 50;
+   searchRange = 200;
    peakToSecondPeakRatio = 0;
    doaDetectThreshold = 0;
    minNumMicPairs = 0;
@@ -235,7 +235,7 @@ void Doa::creat_delayTable()
 //		e.g.	Inputs[0]->processed = Inputs[0]->length; // indicate that all input data has been consumed
 //					Outputs[0]->processed = 1;								// indicate that the buffer has produced 1 output item
 //-------------------------------------------------------------------------
-DoaOutput Doa::processBuffer(float** buffer)
+DoaOutput Doa::processBuffer(float* buffer, int32_t samplesPerChannel)
 {
 #ifdef _DEBUG_DOA
 	clock_t start, end;
@@ -247,11 +247,11 @@ DoaOutput Doa::processBuffer(float** buffer)
    //
    for(int i=0; i<nChannels_; ++i)
    {
-      float* input = buffer[i];
-      //if(Inputs[i]->length < shiftSize_) throw exception("wrong buffer size");
+      float* input = buffer+ samplesPerChannel*i;
+      if(samplesPerChannel < shiftSize_) throw("wrong buffer size");
 
       ulong reservedSize = windowSize_ - shiftSize_;
-      memmove(windows[i], windows[i]+shiftSize_, reservedSize << 2);	// copy reservedSize from the 2nd part to the 1st part (use <<2 for faster multiplied by sizeof(float))		
+      memmove(windows[i], windows[i]+shiftSize_, reservedSize << 2);	// copy reservedSize from the 2nd part to the 1st part (use <<2 for faster multiplied by sizeof(float))	
 	  memmove(windows[i] + reservedSize, input, shiftSize_ <<2);	
    }
   
@@ -313,9 +313,8 @@ bool Doa::ProcessDOA()
          gccPhat_N[0].evaluate_FFT_gccPhat(sig_fft[i+j].get_pOutComplex(), sig_fft[i].get_pOutComplex(), windowSize_);
          gccPhat_N[0].fn_extractGccStats(GCCTable, delay_range, pairs);
 
-         if (hasSpeech)
-            for (int k=0; k<2*delay_range+1; k++)
-               accGCCTable[pairs][k] += GCCTable[pairs][k];
+        for (int k=0; k<2*delay_range+1; k++)
+            accGCCTable[pairs][k] += GCCTable[pairs][k];
 
          pairs++;
       }
@@ -367,7 +366,7 @@ bool Doa::ProcessDOA()
       hasDOA = false;
    else 
       hasDOA = true;
-   std::cout << pairCount << std::endl;
+   
    int search_idx;
    int maxIdx = 0;   
    float maxRatio = 0.0;   
@@ -376,7 +375,7 @@ bool Doa::ProcessDOA()
    for (int n = 0; n < numRows_delayTable; n++)
    {              
       ratioInOutLookAngle = 0;
-      pairCount = 0;
+      int tempPairCount = 0;
       for (int p=0; p<numMicPairs; p++)
       { 
          search_idx = delayTable[n][p] + delay_range; 
@@ -388,10 +387,11 @@ bool Doa::ProcessDOA()
          sumOutLookAngle = (GCCTable_sumCol[p] - GCCTable[p][search_idx]) / (2*delay_range);         
          //ratioInOutLookAngle += sumInLookAngle / sumOutLookAngle; 
          ratioInOutLookAngle += (sumInLookAngle / GCCTable_secondPeak[p]);
-         pairCount++;
+		 tempPairCount++;
       }
 
-      ratioInOutLookAngle = ratioInOutLookAngle / pairCount;
+      ratioInOutLookAngle = ratioInOutLookAngle / tempPairCount;
+	  //std::cout << ratioInOutLookAngle << "  " << tempPairCount << std::endl;
 
       if (maxRatio < ratioInOutLookAngle){         
          maxRatio = ratioInOutLookAngle;
@@ -407,7 +407,7 @@ bool Doa::ProcessDOA()
    if (col>=numsTheta2 || theta2<-90)
       theta2 = 0;	   
 
-   if (hasDOA && hasSpeech)
+   if (hasDOA)
    {
       nonDOAFrames--;
       nonDOAFrames = max(nonDOAFrames,0);
@@ -433,7 +433,7 @@ bool Doa::ProcessDOA()
    }
 
    hasDOA = hasDOA && (maxRatio > doaDetectThreshold);
-   printf("hasDOA = %d NumPairs = %d InOutLookAngle Ratio = %f \n",hasDOA,pairCount,maxRatio);    
+   //printf("hasDOA = %d NumPairs = %d InOutLookAngle Ratio = %f \n",hasDOA,pairCount,maxRatio);    
       
 
    if ((int) prevTheta1s.size() < numMinPrevFrames)

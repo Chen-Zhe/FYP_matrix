@@ -120,7 +120,7 @@ void *voiceActivityDetector(void *null) {
 			LedCon->updateLed();
 			if (doaController == 0) {
 				memcpy((void*)doaFrameBuffer, (void*)buffer[bufferSwitch], NUM_CHANNELS * FRAME_SIZE * sizeof(float));
-				doaController = 10;
+				doaController = 20;
 				mq_send(messageQueue, msg, 4, 0);
 			}
 		}
@@ -149,7 +149,7 @@ double teagerEnergy(float frame[]) {
 
 
 void *DOAcalculation(void *null) {
-	Doa DOA(16000,8,FRAME_SIZE,0);
+	Doa DOA(16000,8, 15360, FRAME_SIZE);
 	DOA.initialize();
 	
 	DoaOutput result;
@@ -160,7 +160,7 @@ void *DOAcalculation(void *null) {
 
 	while (true) {
 		mq_receive(messageQueue, msg, 4, NULL); //blocking I/O
-		result = DOA.processBuffer((float**)doaFrameBuffer);
+		result = DOA.processBuffer((float*)doaFrameBuffer, FRAME_SIZE);
 		if (result.hasDOA)
 			std::cout << "theta1 = " << result.theta1 << " theta2 = " << result.theta2 << std::endl;
 	}

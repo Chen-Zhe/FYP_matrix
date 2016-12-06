@@ -6,8 +6,10 @@
 #include "../matrix-hal/cpp/driver/wishbone_bus.h"
 #include "LedController.h"
 #include "../doa/Doa.h"
+#include <mqueue.h>
 
 #define FRAME_SIZE 384
+#define NUM_CHANNELS 8
 
 namespace matrixCreator = matrix_hal;
 
@@ -15,7 +17,8 @@ double teagerEnergy(float frame[]);
 void *voiceActivityDetector(void *null);
 void *DOAcalculation(void *null);
 
-float buffer[2][8][FRAME_SIZE];
+float buffer[2][NUM_CHANNELS][FRAME_SIZE], doaFrameBuffer[NUM_CHANNELS][FRAME_SIZE];
+
 pthread_mutex_t bufferMutex[2] = { PTHREAD_MUTEX_INITIALIZER };
 
 LedController *LedCon;
@@ -53,8 +56,8 @@ int main() {
 			microphoneArray.Read();
 
 			for (uint32_t s = 0; s < microphoneArray.NumberOfSamples(); s++) {
-				for (uint32_t c = 0; c < microphoneArray.Channels(); c++) {
-					buffer[buffer_switch][c][step] = (float)microphoneArray.At(s, c) / 32768.0;
+				for (uint32_t c = 0; c < NUM_CHANNELS; c++) {
+					buffer[buffer_switch][c][step] = (float)microphoneArray.At(s, c);
 				}
 				step++;
 			}
@@ -77,18 +80,24 @@ void *voiceActivityDetector(void *null) {
 	double th1 = fac1*nf1;
 	double th2 = fac2*nf2;
 
+	int32_t doaController = 0; //do doa when it reaches 0
+
 	double tge1;
-	int32_t init = 20;
+	int32_t noiseFrames = 20;
+	float normalizedFrame[FRAME_SIZE];
 
 	while (true) {
 		pthread_mutex_lock(&bufferMutex[bufferSwitch]);
 
-		tge1 = sqrt(fabs(teagerEnergy(buffer[bufferSwitch][0])));
+		for (int i = 0; i < FRAME_SIZE; i++)
+			normalizedFrame[i] = buffer[bufferSwitch][0][i] / 32768.0;
+		
+		tge1 = sqrt(fabs(teagerEnergy(normalizedFrame)));
 
-		if (tge1 < th1 || init > 0) {
+		if (tge1 < th1 || noiseFrames > 0) {
 			if (tge1 < nf1) alpha = 0.98;
 			else alpha = 0.9;
-			init--;
+			noiseFrames--;
 			nf1 = fmin(alpha*nf1 + (1 - alpha)*tge1, 0.02);
 		}
 		
@@ -99,6 +108,9 @@ void *voiceActivityDetector(void *null) {
 			//voice activity detected
 			LedCon->updateLed();
 			voiceDetected = true;
+			if (doaController == 0) {
+				memcpy((void*)buffer[bufferSwitch])
+			}
 		}
 		else {
 			//no voice activity
@@ -115,11 +127,8 @@ double teagerEnergy(float frame[]) {
 	double tgm = 0.0;
 
 	for (int32_t i = 0; i < FRAME_SIZE - 2; i++) {
-
-		double item = frame[i + 1] * frame[i + 1] - frame[i] * frame[i + 2];
-
-		//calculate mean
-		tgm += item / (FRAME_SIZE - 2);
+		double item = frame[i + 1] * frame[i + 1] - frame[i] * frame[i + 2];		
+		tgm += item / (FRAME_SIZE - 2);//calculate mean
 	}
 
 	return tgm;
@@ -128,13 +137,13 @@ double teagerEnergy(float frame[]) {
 
 void *DOAcalculation(void *null) {
 	Doa DOA(16000,8,320,80);
-	DOA.OnInitialization();
+	DOA.initialize();
 	DoaOutput result;
 
 	while (true) {
 		if (!voiceDetected) usleep(24000);
 		
-		result = DOA.OnProcessing(buffer[0]);
+		result = DOA.processBuffer(buffer[0]);
 
 
 	}

@@ -80,30 +80,12 @@ Doa::~Doa()
    
 }
 
-
-bool checkMicId(int micId)
-{
-   return micId<8 && micId>=0;
-}
-
-bool checkMicList(int* micIds, int length)
-{
-   bool ok = true;
-   for(int i=0; i<length; ++i)
-      if(!checkMicId(micIds[i]))
-      {
-         ok = false;
-         break;
-      }
-      return length > 0 && ok;
-}
-
 //-------------------------------------------------------------------------
 //	@summary:
 //		Initializes the buffers and/or resources required. This method will be 
 //		called just before entering the processing loop
 //-------------------------------------------------------------------------
-void Doa::OnInitialization()
+void Doa::initialize()
 {
 
    // init 8 half window buffers
@@ -259,7 +241,7 @@ void Doa::creat_delayTable()
 //		e.g.	Inputs[0]->processed = Inputs[0]->length; // indicate that all input data has been consumed
 //					Outputs[0]->processed = 1;								// indicate that the buffer has produced 1 output item
 //-------------------------------------------------------------------------
-DoaOutput Doa::OnProcessing(float** buffer)
+DoaOutput Doa::processBuffer(float** buffer)
 {
 #ifdef _DEBUG_DOA
 	clock_t start, end;
@@ -517,7 +499,7 @@ float Doa::findMedian(list<float> mlist)
 //		Releases the buffers and/or resources allocated during initialization. 
 //		This method will be called just after exiting the processing loop
 //-------------------------------------------------------------------------
-void Doa::OnTermination()
+void Doa::terminate()
 {
    //
    // TODO: cleaning up of resources allocated during OnInitialization

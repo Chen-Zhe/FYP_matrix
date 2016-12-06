@@ -18,9 +18,9 @@ public:
 	Doa(int samplingRate, int nChannels, ulong windowSize, ulong shiftSize);
 	virtual ~Doa();
 
-	void OnInitialization();
-	DoaOutput OnProcessing(float** buffer);
-	void OnTermination();
+	void initialize();
+	DoaOutput processBuffer(float** buffer);
+	void terminate();
 
 private:
 

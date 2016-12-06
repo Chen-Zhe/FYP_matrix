@@ -57,7 +57,7 @@ inline void SWAP(T &a, T &b)
 	{T dum=a; a=b; b=dum;}
 
 // exception handling
-
+/*
 #ifndef _USENRERRORCLASS_
 #define throw(message) {printf("ERROR:%s\n",message); throw(1);}
 #else
@@ -74,7 +74,7 @@ void NRcatch(NRerror err) {
 	exit(1);
 }
 #endif
-
+*/
 // usage example:
 //
 //	try {

@@ -25,14 +25,14 @@ Doa::Doa(int samplingRate, int nChannels, ulong windowSize, ulong shiftSize)
 
    micPos = new float*[this->numMics];
 
-   float mic0Position[3] = { +010.7, -004.2, -017.9 };
-   float mic1Position[3] = { +005.0, +005.1, -007.3 };
-   float mic2Position[3] = { +000.0, +000.0, +000.0 };
-   float mic3Position[3] = { -005.0, +005.1, -007.3 };
-   float mic4Position[3] = { -010.7, -004.2, -017.9 };
-   float mic5Position[3] = { +010.1, -016.2, -017.8 };
-   float mic6Position[3] = { +000.0, -018.1, -005.3 };
-   float mic7Position[3] = { -010.1, -016.2, -017.8 };
+   float mic0Position[3] = { 19.708196, -47.579795, 0 };
+   float mic1Position[3] = { -20.291803, -47.579795, 0 };
+   float mic2Position[3] = { -48.420204, -19.708196, 0 };
+   float mic3Position[3] = { -48.420204, 20.291803, 0 };
+   float mic4Position[3] = { -29.291803, 48.420204, 0 };
+   float mic5Position[3] = { 19.708196, 48.420204, 0 };
+   float mic6Position[3] = { 47.579795, 20.291803, 0 };
+   float mic7Position[3] = { 47.579795, -19.708196, 0 };
 
    micPos[0] = mic0Position;
    micPos[1] = mic1Position;
@@ -87,18 +87,13 @@ Doa::~Doa()
 //-------------------------------------------------------------------------
 void Doa::initialize()
 {
-
    // init 8 half window buffers
    for (int i=0; i<nChannels_; ++i)
    {
       windows.push_back(new float[windowSize_]);
-      memset(windows[i], 0, sizeof(float)*windowSize_);		
+      memset(windows[i], 0, sizeof(float)*windowSize_);	
    }
-   InitParameters();   
-}
-
-void Doa::InitParameters()
-{
+	//init parameters
    theta1 = 0.0;
    theta2 = 0.0;
 

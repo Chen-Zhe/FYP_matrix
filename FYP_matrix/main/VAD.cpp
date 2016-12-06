@@ -7,9 +7,13 @@
 #include "LedController.h"
 #include "../doa/Doa.h"
 #include <mqueue.h>
+#include <fcntl.h>
+//#include <bits/fcntl-linux.h>
+//#include <errno.h>
 
 #define FRAME_SIZE 384
 #define NUM_CHANNELS 8
+#define VAD_DOA_Q_NAME "/vad_doa_queue"
 
 namespace matrixCreator = matrix_hal;
 
@@ -22,8 +26,6 @@ float buffer[2][NUM_CHANNELS][FRAME_SIZE], doaFrameBuffer[NUM_CHANNELS][FRAME_SI
 pthread_mutex_t bufferMutex[2] = { PTHREAD_MUTEX_INITIALIZER };
 
 LedController *LedCon;
-
-bool voiceDetected = false;
 
 int main() {
 	matrixCreator::WishboneBus bus;
@@ -42,11 +44,9 @@ int main() {
 	pthread_mutex_lock(&bufferMutex[buffer_switch]);
 
 	pthread_t VAD;//spawn networking thread and pass the connection
-	pthread_t DOA;
+	
 
 	pthread_create(&VAD, NULL, voiceActivityDetector, (void *)NULL);
-	pthread_create(&DOA, NULL, DOAcalculation, (void *)NULL);
-
 	microphoneArray.Setup(&bus);
 
 	while (true) {
@@ -86,6 +86,17 @@ void *voiceActivityDetector(void *null) {
 	int32_t noiseFrames = 20;
 	float normalizedFrame[FRAME_SIZE];
 
+	char msg[4]="T";
+	struct mq_attr attr;
+	attr.mq_flags = 0;
+	attr.mq_maxmsg = 10;
+	attr.mq_msgsize = 4;
+	attr.mq_curmsgs = 0;
+	mqd_t messageQueue = mq_open(VAD_DOA_Q_NAME, O_CREAT | O_WRONLY, 0644, &attr);
+
+	pthread_t DOA;
+	pthread_create(&DOA, NULL, DOAcalculation, (void *)NULL);
+
 	while (true) {
 		pthread_mutex_lock(&bufferMutex[bufferSwitch]);
 
@@ -104,19 +115,21 @@ void *voiceActivityDetector(void *null) {
 		th1 = fac1*nf1;
 		th2 = fac2*nf1;
 
-		if (tge1 > th2) {
-			//voice activity detected
+		if (tge1 > th2) {//voice activity detected			
 			LedCon->updateLed();
-			voiceDetected = true;
 			if (doaController == 0) {
-				memcpy((void*)buffer[bufferSwitch])
+				memcpy((void*)doaFrameBuffer, (void*)buffer[bufferSwitch], NUM_CHANNELS * FRAME_SIZE * sizeof(float));
+				doaController = 10;
+				std::cout << "msg" << std::endl;
+				mq_send(messageQueue, msg, 4, 0);
 			}
 		}
-		else {
-			//no voice activity
+		else {//no voice activity			
 			LedCon->turnOffLed();
-			voiceDetected = false;
 		}
+
+		if(doaController>0)
+			doaController--;
 
 		pthread_mutex_unlock(&bufferMutex[bufferSwitch]);
 		bufferSwitch = (bufferSwitch + 1) % 2;
@@ -136,16 +149,20 @@ double teagerEnergy(float frame[]) {
 
 
 void *DOAcalculation(void *null) {
-	Doa DOA(16000,8,320,80);
+	Doa DOA(16000,8,FRAME_SIZE,96);
 	DOA.initialize();
+	
 	DoaOutput result;
+	
+	char msg[4];
+	mqd_t messageQueue = mq_open(VAD_DOA_Q_NAME, O_RDONLY);
+	
 
 	while (true) {
-		if (!voiceDetected) usleep(24000);
-		
-		result = DOA.processBuffer(buffer[0]);
-
-
+		mq_receive(messageQueue, msg, 4, NULL); //blocking I/O
+		result = DOA.processBuffer((float**)doaFrameBuffer);
+		if (result.hasDOA)
+			std::cout << "theta1 = " << result.theta1 << " theta2 = " << result.theta2 << std::endl;
 	}
 
 }

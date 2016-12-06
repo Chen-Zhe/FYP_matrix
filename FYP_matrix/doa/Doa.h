@@ -85,7 +85,6 @@ private:
 	bool        hasSpeech;
 
 private:    // methods
-	void		InitParameters();
 	void		creat_delayTable();
 	bool		ProcessDOA();
 	float    findMedian(list<float> mlist);

@@ -245,8 +245,8 @@ extern int lockf64 (int __fd, int __cmd, off64_t __len);
 /* Advice the system about the expected behaviour of the application with
    respect to the file associated with FD.  */
 # ifndef __USE_FILE_OFFSET64
-extern int posix_fadvise (int __fd, off_t __offset, off_t __len,
-			  int __advise) __THROW;
+//extern int posix_fadvise (int __fd, off_t __offset, off_t __len,
+//			  int __advise) __THROW;
 # else
  # ifdef __REDIRECT_NTH
 extern int __REDIRECT_NTH (posix_fadvise, (int __fd, __off64_t __offset,
@@ -257,8 +257,8 @@ extern int __REDIRECT_NTH (posix_fadvise, (int __fd, __off64_t __offset,
 #  endif
 # endif
 # ifdef __USE_LARGEFILE64
-extern int posix_fadvise64 (int __fd, off64_t __offset, off64_t __len,
-			    int __advise) __THROW;
+//extern int posix_fadvise64 (int __fd, off64_t __offset, off64_t __len,
+//			    int __advise) __THROW;
 # endif
 
 

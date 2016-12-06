@@ -5,7 +5,7 @@
 #ifndef INC_CFFTW
 #define INC_CFFTW
 
-#include "fftw3.h"
+#include <fftw3.h>
 
 class CFFTW
 {

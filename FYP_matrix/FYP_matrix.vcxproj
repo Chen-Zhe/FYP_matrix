@@ -86,30 +86,6 @@
     <ClInclude Include="doa\DoaOutput.h" />
     <ClInclude Include="doa\nr3.h" />
     <ClInclude Include="doa\svd.h" />
-    <ClInclude Include="lib-headers\fftw3.h" />
-    <ClInclude Include="lib-headers\libsocket\conf.h" />
-    <ClInclude Include="lib-headers\libsocket\dgramclient.hpp" />
-    <ClInclude Include="lib-headers\libsocket\dgramoverstream.hpp" />
-    <ClInclude Include="lib-headers\libsocket\epoll.hpp" />
-    <ClInclude Include="lib-headers\libsocket\exception.hpp" />
-    <ClInclude Include="lib-headers\libsocket\framing.hpp" />
-    <ClInclude Include="lib-headers\libsocket\inetbase.hpp" />
-    <ClInclude Include="lib-headers\libsocket\inetclientdgram.hpp" />
-    <ClInclude Include="lib-headers\libsocket\inetclientstream.hpp" />
-    <ClInclude Include="lib-headers\libsocket\inetdgram.hpp" />
-    <ClInclude Include="lib-headers\libsocket\inetserverdgram.hpp" />
-    <ClInclude Include="lib-headers\libsocket\inetserverstream.hpp" />
-    <ClInclude Include="lib-headers\libsocket\libinetsocket.h" />
-    <ClInclude Include="lib-headers\libsocket\libunixsocket.h" />
-    <ClInclude Include="lib-headers\libsocket\select.hpp" />
-    <ClInclude Include="lib-headers\libsocket\socket.hpp" />
-    <ClInclude Include="lib-headers\libsocket\streamclient.hpp" />
-    <ClInclude Include="lib-headers\libsocket\unixbase.hpp" />
-    <ClInclude Include="lib-headers\libsocket\unixclientdgram.hpp" />
-    <ClInclude Include="lib-headers\libsocket\unixclientstream.hpp" />
-    <ClInclude Include="lib-headers\libsocket\unixdgram.hpp" />
-    <ClInclude Include="lib-headers\libsocket\unixserverdgram.hpp" />
-    <ClInclude Include="lib-headers\libsocket\unixserverstream.hpp" />
     <ClInclude Include="main\LedController.h" />
     <ClInclude Include="matrix-hal\cpp\driver\circular_queue.h" />
     <ClInclude Include="matrix-hal\cpp\driver\creator_memory_map.h" />
@@ -135,7 +111,7 @@
   </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\哲\Documents\FYP_matrix\FYP_matrix\lib-headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory)\installed-package-headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

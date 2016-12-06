@@ -14,7 +14,7 @@
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_complex_math.h>
 
-#include "fftw3.h"
+#include <fftw3.h>
 
 struct COMPLEX{
 	double re;

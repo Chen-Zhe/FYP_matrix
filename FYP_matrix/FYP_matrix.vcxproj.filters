@@ -63,9 +63,6 @@
     <Filter Include="Library\Matrix-HAL">
       <UniqueIdentifier>{e19c8111-e836-4f82-9421-d9a9923328c9}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Library\libsocket">
-      <UniqueIdentifier>{e2d5b9d2-8c80-4eea-ad3d-a610c66a301b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Library\DOA">
       <UniqueIdentifier>{97c9385e-857a-42d3-8032-5e144451b60d}</UniqueIdentifier>
     </Filter>
@@ -121,78 +118,6 @@
     </ClInclude>
     <ClInclude Include="matrix-hal\cpp\driver\wishbone_bus.h">
       <Filter>Library\Matrix-HAL</Filter>
-    </ClInclude>
-    <ClInclude Include="lib-headers\libsocket\conf.h">
-      <Filter>Library\libsocket</Filter>
-    </ClInclude>
-    <ClInclude Include="lib-headers\libsocket\dgramclient.hpp">
-      <Filter>Library\libsocket</Filter>
-    </ClInclude>
-    <ClInclude Include="lib-headers\libsocket\dgramoverstream.hpp">
-      <Filter>Library\libsocket</Filter>
-    </ClInclude>
-    <ClInclude Include="lib-headers\libsocket\epoll.hpp">
-      <Filter>Library\libsocket</Filter>
-    </ClInclude>
-    <ClInclude Include="lib-headers\libsocket\exception.hpp">
-      <Filter>Library\libsocket</Filter>
-    </ClInclude>
-    <ClInclude Include="lib-headers\libsocket\framing.hpp">
-      <Filter>Library\libsocket</Filter>
-    </ClInclude>
-    <ClInclude Include="lib-headers\libsocket\inetbase.hpp">
-      <Filter>Library\libsocket</Filter>
-    </ClInclude>
-    <ClInclude Include="lib-headers\libsocket\inetclientdgram.hpp">
-      <Filter>Library\libsocket</Filter>
-    </ClInclude>
-    <ClInclude Include="lib-headers\libsocket\inetclientstream.hpp">
-      <Filter>Library\libsocket</Filter>
-    </ClInclude>
-    <ClInclude Include="lib-headers\libsocket\inetdgram.hpp">
-      <Filter>Library\libsocket</Filter>
-    </ClInclude>
-    <ClInclude Include="lib-headers\libsocket\inetserverdgram.hpp">
-      <Filter>Library\libsocket</Filter>
-    </ClInclude>
-    <ClInclude Include="lib-headers\libsocket\inetserverstream.hpp">
-      <Filter>Library\libsocket</Filter>
-    </ClInclude>
-    <ClInclude Include="lib-headers\libsocket\libinetsocket.h">
-      <Filter>Library\libsocket</Filter>
-    </ClInclude>
-    <ClInclude Include="lib-headers\libsocket\libunixsocket.h">
-      <Filter>Library\libsocket</Filter>
-    </ClInclude>
-    <ClInclude Include="lib-headers\libsocket\select.hpp">
-      <Filter>Library\libsocket</Filter>
-    </ClInclude>
-    <ClInclude Include="lib-headers\libsocket\socket.hpp">
-      <Filter>Library\libsocket</Filter>
-    </ClInclude>
-    <ClInclude Include="lib-headers\libsocket\streamclient.hpp">
-      <Filter>Library\libsocket</Filter>
-    </ClInclude>
-    <ClInclude Include="lib-headers\libsocket\unixbase.hpp">
-      <Filter>Library\libsocket</Filter>
-    </ClInclude>
-    <ClInclude Include="lib-headers\libsocket\unixclientdgram.hpp">
-      <Filter>Library\libsocket</Filter>
-    </ClInclude>
-    <ClInclude Include="lib-headers\libsocket\unixclientstream.hpp">
-      <Filter>Library\libsocket</Filter>
-    </ClInclude>
-    <ClInclude Include="lib-headers\libsocket\unixdgram.hpp">
-      <Filter>Library\libsocket</Filter>
-    </ClInclude>
-    <ClInclude Include="lib-headers\libsocket\unixserverdgram.hpp">
-      <Filter>Library\libsocket</Filter>
-    </ClInclude>
-    <ClInclude Include="lib-headers\libsocket\unixserverstream.hpp">
-      <Filter>Library\libsocket</Filter>
-    </ClInclude>
-    <ClInclude Include="lib-headers\fftw3.h">
-      <Filter>Library</Filter>
     </ClInclude>
     <ClInclude Include="main\LedController.h">
       <Filter>main</Filter>

@@ -35,7 +35,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <RemoteCppCompileToolExe>g++</RemoteCppCompileToolExe>
-    <RemoteLdToolExe>g++ -lpthread -lsocket++ -lfftw3f</RemoteLdToolExe>
+    <RemoteLdToolExe>g++  -lfftw3f -lgsl -lpthread -lsocket++ -lrt</RemoteLdToolExe>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <Link>
@@ -60,6 +60,11 @@
     </RemotePostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="doa\CFFTW.cpp" />
+    <ClCompile Include="doa\CGccPhat.cpp" />
+    <ClCompile Include="doa\CSVD.cpp" />
+    <ClCompile Include="doa\Doa.cpp" />
+    <ClCompile Include="doa\DoaFuncs.cpp" />
     <ClCompile Include="main\VAD.cpp" />
     <ClCompile Include="matrix-hal\dummy_sensor.cpp" />
     <ClCompile Include="matrix-hal\everloop.cpp" />
@@ -74,30 +79,13 @@
     <ClCompile Include="matrix-hal\wishbone_bus.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="lib-headers\fftw3.h" />
-    <ClInclude Include="lib-headers\libsocket\conf.h" />
-    <ClInclude Include="lib-headers\libsocket\dgramclient.hpp" />
-    <ClInclude Include="lib-headers\libsocket\dgramoverstream.hpp" />
-    <ClInclude Include="lib-headers\libsocket\epoll.hpp" />
-    <ClInclude Include="lib-headers\libsocket\exception.hpp" />
-    <ClInclude Include="lib-headers\libsocket\framing.hpp" />
-    <ClInclude Include="lib-headers\libsocket\inetbase.hpp" />
-    <ClInclude Include="lib-headers\libsocket\inetclientdgram.hpp" />
-    <ClInclude Include="lib-headers\libsocket\inetclientstream.hpp" />
-    <ClInclude Include="lib-headers\libsocket\inetdgram.hpp" />
-    <ClInclude Include="lib-headers\libsocket\inetserverdgram.hpp" />
-    <ClInclude Include="lib-headers\libsocket\inetserverstream.hpp" />
-    <ClInclude Include="lib-headers\libsocket\libinetsocket.h" />
-    <ClInclude Include="lib-headers\libsocket\libunixsocket.h" />
-    <ClInclude Include="lib-headers\libsocket\select.hpp" />
-    <ClInclude Include="lib-headers\libsocket\socket.hpp" />
-    <ClInclude Include="lib-headers\libsocket\streamclient.hpp" />
-    <ClInclude Include="lib-headers\libsocket\unixbase.hpp" />
-    <ClInclude Include="lib-headers\libsocket\unixclientdgram.hpp" />
-    <ClInclude Include="lib-headers\libsocket\unixclientstream.hpp" />
-    <ClInclude Include="lib-headers\libsocket\unixdgram.hpp" />
-    <ClInclude Include="lib-headers\libsocket\unixserverdgram.hpp" />
-    <ClInclude Include="lib-headers\libsocket\unixserverstream.hpp" />
+    <ClInclude Include="doa\CFFTW.h" />
+    <ClInclude Include="doa\CGccPhat.h" />
+    <ClInclude Include="doa\Doa.h" />
+    <ClInclude Include="doa\DoaFuncs.h" />
+    <ClInclude Include="doa\DoaOutput.h" />
+    <ClInclude Include="doa\nr3.h" />
+    <ClInclude Include="doa\svd.h" />
     <ClInclude Include="main\LedController.h" />
     <ClInclude Include="matrix-hal\cpp\driver\circular_queue.h" />
     <ClInclude Include="matrix-hal\cpp\driver\creator_memory_map.h" />
@@ -121,7 +109,11 @@
     <ClInclude Include="matrix-hal\cpp\driver\uv_sensor.h" />
     <ClInclude Include="matrix-hal\cpp\driver\wishbone_bus.h" />
   </ItemGroup>
-  <ItemDefinitionGroup />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(MSBuildProjectDirectory)\installed-package-headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
 </Project>

@@ -6,10 +6,10 @@
 #include <iostream>
 #include <valarray>
 
-#include "../lib-headers/libsocket/inetserverstream.hpp"
-#include "../lib-headers/libsocket/exception.hpp"
-#include "../lib-headers/libsocket/socket.hpp"
-#include "../lib-headers/libsocket/select.hpp"
+#include <libsocket/inetserverstream.hpp>
+#include <libsocket/exception.hpp>
+#include <libsocket/socket.hpp>
+#include <libsocket/select.hpp>
 
 #include "../matrix-hal/cpp/driver/everloop_image.h"
 #include "../matrix-hal/cpp/driver/everloop.h"

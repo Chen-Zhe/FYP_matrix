@@ -57,7 +57,7 @@ int main() {
 
 			for (uint32_t s = 0; s < microphoneArray.NumberOfSamples(); s++) {
 				for (uint32_t c = 0; c < NUM_CHANNELS; c++) {
-					buffer[buffer_switch][c][step] = (float)microphoneArray.At(s, c) / 32768.0;
+					buffer[buffer_switch][c][step] = microphoneArray.At(s, c) / 32768.0;
 				}
 				step++;
 			}
@@ -84,7 +84,7 @@ void *voiceActivityDetector(void *null) {
 	int32_t noiseFrames = 20;
 	//float normalizedFrame[FRAME_SIZE];
 
-	int32_t doaController = 0; //do doa when it reaches 0
+	//int32_t doaController = 0; //do doa when it reaches 0
 	char msg[4]="T";
 	struct mq_attr attr;
 	attr.mq_flags = 0;
@@ -98,11 +98,6 @@ void *voiceActivityDetector(void *null) {
 
 	while (true) {
 		pthread_mutex_lock(&bufferMutex[bufferSwitch]);
-
-		/*
-		for (int i = 0; i < FRAME_SIZE; i++)
-			normalizedFrame[i] = buffer[bufferSwitch][0][i] / 32768.0;
-		*/
 		tge1 = sqrt(fabs(teagerEnergy(buffer[bufferSwitch][0])));
 
 		if (tge1 < th1 || noiseFrames > 0) {
@@ -117,18 +112,18 @@ void *voiceActivityDetector(void *null) {
 
 		if (tge1 > th2) {//voice activity detected			
 			LedCon->updateLed();
-			if (doaController == 0) {
+			//if (doaController == 0) {
 				memcpy((void*)doaFrameBuffer, (void*)buffer[bufferSwitch], NUM_CHANNELS * FRAME_SIZE * sizeof(float));
-				doaController = 20;
+				//doaController = 20;
 				mq_send(messageQueue, msg, 4, 0);
-			}
+			//}
 		}
 		else {//no voice activity			
 			LedCon->turnOffLed();
 		}
 
-		if(doaController>0)
-			doaController--;
+		//if(doaController>0)
+			//doaController--;
 
 		pthread_mutex_unlock(&bufferMutex[bufferSwitch]);
 		bufferSwitch = (bufferSwitch + 1) % 2;
@@ -148,9 +143,8 @@ double teagerEnergy(float frame[]) {
 
 
 void *DOAcalculation(void *null) {
-	Doa DOA(16000,8, 15360, FRAME_SIZE);
-	DOA.initialize();
-	
+	Doa DOA(16000,8, FRAME_SIZE*10, FRAME_SIZE);
+	DOA.initialize();	
 	DoaOutput result;
 	
 	char msg[4];

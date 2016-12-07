@@ -80,12 +80,11 @@ void *voiceActivityDetector(void *null) {
 	double th1 = fac1*nf1;
 	double th2 = fac2*nf2;
 
-	int32_t doaController = 0; //do doa when it reaches 0
-
 	double tge1;
 	int32_t noiseFrames = 20;
 	//float normalizedFrame[FRAME_SIZE];
 
+	int32_t doaController = 0; //do doa when it reaches 0
 	char msg[4]="T";
 	struct mq_attr attr;
 	attr.mq_flags = 0;
@@ -141,10 +140,10 @@ double teagerEnergy(float frame[]) {
 
 	for (int32_t i = 0; i < FRAME_SIZE - 2; i++) {
 		double item = frame[i + 1] * frame[i + 1] - frame[i] * frame[i + 2];		
-		tgm += item / (FRAME_SIZE - 2);//calculate mean
+		tgm += item;//calculate mean
 	}
 
-	return tgm;
+	return tgm / (FRAME_SIZE - 2);
 }
 
 
@@ -156,7 +155,6 @@ void *DOAcalculation(void *null) {
 	
 	char msg[4];
 	mqd_t messageQueue = mq_open(VAD_DOA_Q_NAME, O_RDONLY);
-	
 
 	while (true) {
 		mq_receive(messageQueue, msg, 4, NULL); //blocking I/O

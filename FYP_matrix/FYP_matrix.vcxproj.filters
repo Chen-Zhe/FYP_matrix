@@ -34,9 +34,6 @@
     <ClCompile Include="matrix-hal\mcu_firmware.cpp">
       <Filter>Library\Matrix-HAL</Filter>
     </ClCompile>
-    <ClCompile Include="main\VAD.cpp">
-      <Filter>main</Filter>
-    </ClCompile>
     <ClCompile Include="doa\CFFTW.cpp">
       <Filter>Library\DOA</Filter>
     </ClCompile>
@@ -51,6 +48,9 @@
     </ClCompile>
     <ClCompile Include="doa\DoaFuncs.cpp">
       <Filter>Library\DOA</Filter>
+    </ClCompile>
+    <ClCompile Include="main\VAD-DOA.cpp">
+      <Filter>main</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

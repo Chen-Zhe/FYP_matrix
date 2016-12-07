@@ -51,4 +51,4 @@ struct flock64
 #endif
 
 /* Include generic Linux declarations.  */
-#include <fcntl-linux.h>
+#include <bits/fcntl-linux.h>

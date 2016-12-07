@@ -235,20 +235,20 @@ void Doa::creat_delayTable()
 //		e.g.	Inputs[0]->processed = Inputs[0]->length; // indicate that all input data has been consumed
 //					Outputs[0]->processed = 1;								// indicate that the buffer has produced 1 output item
 //-------------------------------------------------------------------------
-DoaOutput Doa::processBuffer(float* buffer, int32_t samplesPerChannel)
+DoaOutput Doa::processBuffer(float* buffer, bool vadPositive)
 {
-#ifdef _DEBUG_DOA
+//#ifdef _DEBUG_DOA
 	clock_t start, end;
 	start = clock();
-#endif
+//#endif
 
    //
    // prepare your input/output streams here using Inputs and Outputs vectors
    //
    for(int i=0; i<nChannels_; ++i)
    {
-      float* input = buffer+ samplesPerChannel*i;
-      if(samplesPerChannel < shiftSize_) throw("wrong buffer size");
+      float* input = buffer+ shiftSize_*i;
+      //if(samplesPerChannel < shiftSize_) throw("wrong buffer size");
 
       ulong reservedSize = windowSize_ - shiftSize_;
       memmove(windows[i], windows[i]+shiftSize_, reservedSize << 2);	// copy reservedSize from the 2nd part to the 1st part (use <<2 for faster multiplied by sizeof(float))	
@@ -265,7 +265,7 @@ DoaOutput Doa::processBuffer(float* buffer, int32_t samplesPerChannel)
       sig_fft[i].evaluate_plan();
    } 
 
-   bool hasDOA = ProcessDOA();
+   bool hasDOA = ProcessDOA(vadPositive)&&vadPositive;
    output.hasDOA = hasDOA;
 
    if (hasDOA){
@@ -291,16 +291,16 @@ DoaOutput Doa::processBuffer(float* buffer, int32_t samplesPerChannel)
    }
    */
 
-#ifdef _DEBUG_DOA
+//#ifdef _DEBUG_DOA
    end = clock();
    double elapsed = ((double) (end-start)) / CLOCKS_PER_SEC * 1000;
    printf("DOA took %.2f milliseconds.\n", elapsed);
-#endif
+//#endif
 
    return output;
 }
 
-bool Doa::ProcessDOA()
+bool Doa::ProcessDOA(bool vadPositive)
 {
    bool hasDOA;
    int row, col;   
@@ -312,9 +312,10 @@ bool Doa::ProcessDOA()
       {
          gccPhat_N[0].evaluate_FFT_gccPhat(sig_fft[i+j].get_pOutComplex(), sig_fft[i].get_pOutComplex(), windowSize_);
          gccPhat_N[0].fn_extractGccStats(GCCTable, delay_range, pairs);
-
-        for (int k=0; k<2*delay_range+1; k++)
-            accGCCTable[pairs][k] += GCCTable[pairs][k];
+		 
+		 if (vadPositive)
+			for (int k=0; k<2*delay_range+1; k++)
+				accGCCTable[pairs][k] += GCCTable[pairs][k];
 
          pairs++;
       }
@@ -407,7 +408,7 @@ bool Doa::ProcessDOA()
    if (col>=numsTheta2 || theta2<-90)
       theta2 = 0;	   
 
-   if (hasDOA)
+   if (hasDOA && vadPositive)
    {
       nonDOAFrames--;
       nonDOAFrames = max(nonDOAFrames,0);

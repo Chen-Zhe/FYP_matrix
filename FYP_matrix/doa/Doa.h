@@ -19,7 +19,7 @@ public:
 	virtual ~Doa();
 
 	void		initialize();
-	DoaOutput	processBuffer(float* buffer, int32_t samplesPerChannel);
+	DoaOutput	processBuffer(float* buffer, bool vadPositive);
 	void		terminate();
 
 private:
@@ -81,6 +81,6 @@ private:
 
 // methods
 	void		creat_delayTable();
-	bool		ProcessDOA();
+	bool		ProcessDOA(bool vadPositive);
 	float    findMedian(list<float> mlist);
 };

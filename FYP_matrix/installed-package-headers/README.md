@@ -1,2 +1,2 @@
-This folder stores installed library headers and system headers on R-pi that Visual Studio doesn't have. It is included in the include path of Visual Studio to get rid of some errors.
-This folder is not included in the solution nor will it be copied over to R-pi.
+- This folder stores installed library headers and system headers on R-pi that Visual Studio doesn't have. It is included in the include path of Visual Studio to get rid of some errors.
+- This folder is not included in the solution nor will it be copied over to R-pi.

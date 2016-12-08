@@ -237,10 +237,10 @@ void Doa::creat_delayTable()
 //-------------------------------------------------------------------------
 DoaOutput Doa::processBuffer(float* buffer, bool vadPositive)
 {
-//#ifdef _DEBUG_DOA
+#ifdef _DEBUG_DOA
 	clock_t start, end;
 	start = clock();
-//#endif
+#endif
 
    //
    // prepare your input/output streams here using Inputs and Outputs vectors
@@ -291,11 +291,11 @@ DoaOutput Doa::processBuffer(float* buffer, bool vadPositive)
    }
    */
 
-//#ifdef _DEBUG_DOA
+#ifdef _DEBUG_DOA
    end = clock();
    double elapsed = ((double) (end-start)) / CLOCKS_PER_SEC * 1000;
    printf("DOA took %.2f milliseconds.\n", elapsed);
-//#endif
+#endif
 
    return output;
 }

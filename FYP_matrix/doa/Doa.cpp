@@ -53,31 +53,6 @@ Doa::Doa(int samplingRate, int nChannels, ulong windowSize, ulong shiftSize)
    numsTheta1 = 2 * 90 + 1;
    numsTheta2 = 2 * 90 + 1;
 }
-Doa::~Doa() 
-{
-
-   delete [] r_GCC_range;
-
-   for(int i=0; i<numMicPairs; i++)
-   {
-      delete [] GCCTable[i];
-      delete [] accGCCTable[i];
-      delete [] P_xx[i];
-   }
-   delete [] GCCTable;
-   delete [] accGCCTable;
-   delete [] GCCTable_sumCol;
-   delete [] P_xx;
-
-   delete [] GCCTable_highestPeak;
-   delete [] highestPeakIdx;
-   delete [] secondPeakIdx;
-   delete [] GCCTable_secondPeak;
-   delete [] vect_theta1;
-   delete [] vect_theta2;
-   delete [] selectedPairs;
-   
-}
 
 //-------------------------------------------------------------------------
 //	@summary:
@@ -111,10 +86,10 @@ void Doa::initialize()
    //------------------------------------------------------------
    //added for search space method   
    delay_range = searchRange;	   //constrain the delay based on mic array size	
-   creat_delayTable();
+   create_delayTable();
 }
 
-void Doa::creat_delayTable()
+void Doa::create_delayTable()
 {
    vect_theta1 = (float *)malloc(numsTheta1*sizeof(int));
    vect_theta2 = (float *)malloc(numsTheta2*sizeof(int));
@@ -271,25 +246,19 @@ DoaOutput Doa::processBuffer(float* buffer, bool vadPositive)
    if (hasDOA){
       output.theta1 = theta1;
       output.theta2 = theta2;
-   }
-/*
-   if(output->hasDOA && serverConnect==1)
-   {
-      float theta1_sent;
-      float adjust_theta1 = output->theta1;
-      if (adjust_theta1>=-90 && adjust_theta1<=180)
-         theta1_sent = adjust_theta1-(float)90;
-      if (adjust_theta1<-90 && adjust_theta1>-180)
-         theta1_sent = (float)270+adjust_theta1;
-      if (output->theta2==0.0)
-         output->theta2 = 0.0;
-      if (output->theta1==-200)
-         theta1_sent = (float)0.0;
-      msg = formatBrainMsg(theta1_sent, output->theta2,output->theta1);      
-      brain->SendLine(msg);
 
+	  float theta1_sent;
+	  float adjust_theta1 = output.theta1;
+	  if (adjust_theta1 >= -90 && adjust_theta1 <= 180)
+		  theta1_sent = adjust_theta1 - (float)90;
+	  if (adjust_theta1<-90 && adjust_theta1>-180)
+		  theta1_sent = (float)270 + adjust_theta1;
+	  if (output.theta2 == 0.0)
+		  output.theta2 = 0.0;
+	  if (output.theta1 == -200)
+		  theta1_sent = (float)0.0;
+	  std::cout << "adj: " << theta1_sent << std::endl;
    }
-   */
 
 #ifdef _DEBUG_DOA
    end = clock();
@@ -492,13 +461,30 @@ float Doa::findMedian(list<float> mlist)
 //-------------------------------------------------------------------------
 //	@summary:
 //		Releases the buffers and/or resources allocated during initialization. 
-//		This method will be called just after exiting the processing loop
+//		This method will be automatically called when the DOA object is out of scope
 //-------------------------------------------------------------------------
-void Doa::terminate()
+Doa::~Doa()
 {
-   //
-   // TODO: cleaning up of resources allocated during OnInitialization
-   //         
-}
 
- 
+	delete[] r_GCC_range;
+
+	for (int i = 0; i<numMicPairs; i++)
+	{
+		delete[] GCCTable[i];
+		delete[] accGCCTable[i];
+		delete[] P_xx[i];
+	}
+	delete[] GCCTable;
+	delete[] accGCCTable;
+	delete[] GCCTable_sumCol;
+	delete[] P_xx;
+
+	delete[] GCCTable_highestPeak;
+	delete[] highestPeakIdx;
+	delete[] secondPeakIdx;
+	delete[] GCCTable_secondPeak;
+	delete[] vect_theta1;
+	delete[] vect_theta2;
+	delete[] selectedPairs;
+
+}

@@ -1,13 +1,20 @@
-#include <pthread.h>
 #include <iostream>
 #include <cmath>
+#include <fstream>
 #include <unistd.h>
-#include "../matrix-hal/cpp/driver/microphone_array.h"
-#include "../matrix-hal/cpp/driver/wishbone_bus.h"
-#include "LedController.h"
-#include "../doa/Doa.h"
+#include <string>
+
+#include <pthread.h>
 #include <mqueue.h>
 #include <fcntl.h>
+
+#include "LedController.h"
+
+#include "../matrix-hal/cpp/driver/microphone_array.h"
+#include "../matrix-hal/cpp/driver/wishbone_bus.h"
+
+#include "../doa/Doa.h"
+
 
 #define FRAME_SIZE 512
 #define NUM_CHANNELS 8
@@ -19,11 +26,12 @@ const int32_t frameByteSize = FRAME_SIZE * sizeof(float);
 
 namespace matrixCreator = matrix_hal;
 
-double teagerEnergy(float frame[]);
+float teagerEnergy(float frame[]);
 void *voiceActivityDetector(void *null);
 void *DOAcalculation(void *null);
 
 float normalizedBuffer[2][NUM_CHANNELS][SHIFT_SIZE];
+int16_t originalBuffer[2][NUM_CHANNELS][SHIFT_SIZE];
 
 pthread_mutex_t normalizedBufferMutex[2] = { PTHREAD_MUTEX_INITIALIZER };
 
@@ -85,6 +93,7 @@ int main() {
 			for (uint32_t s = 0; s < microphoneArray.NumberOfSamples(); s++) {
 				for (uint32_t c = 0; c < NUM_CHANNELS; c++) {
 					normalizedBuffer[buffer_switch][c][step] = microphoneArray.At(s, c) / 32768.0;
+					originalBuffer[buffer_switch][c][step] = microphoneArray.At(s, c);
 				}
 				step++;
 
@@ -102,16 +111,16 @@ int main() {
 void *voiceActivityDetector(void *null) {
 	float internalNormalizedFrameBuffer[FRAME_SIZE];
 
-	double alpha = 0.9;
-	double nf1 = 0.02;
-	double nf2 = 0.03;
+	float alpha = 0.9;
+	float nf1 = 0.02;
+	float nf2 = 0.03;
 
-	double fac1 = 1.175;
-	double fac2 = 1.2;
-	double th1 = fac1*nf1;
-	double th2 = fac2*nf2;
+	float fac1 = 1.175;
+	float fac2 = 1.2;
+	float th1 = fac1*nf1;
+	float th2 = fac2*nf2;
 
-	double tge1;
+	float tge1;
 
 	int32_t vadPositiveMsg = 1;
 	int32_t vadNegativeMsg = 0;
@@ -128,6 +137,7 @@ void *voiceActivityDetector(void *null) {
 
 	//------VAD thread------
 	while (true) {
+
 		frameCount--;//count-down counters
 		
 		mq_receive(fromRecorder, (char*)internalNormalizedFrameBuffer, frameByteSize, NULL);
@@ -170,14 +180,15 @@ void *voiceActivityDetector(void *null) {
 			}
 			vadPositiveCount = 0;			
 		}
+
 	}
 }
 
-double teagerEnergy(float frame[]) {
-	double tgm = 0.0;
+float teagerEnergy(float frame[]) {
+	float tgm = 0.0;
 
 	for (int32_t i = 0; i < FRAME_SIZE - 2; i++) {
-		double item = frame[i + 1] * frame[i + 1] - frame[i] * frame[i + 2];		
+		float item = frame[i + 1] * frame[i + 1] - frame[i] * frame[i + 2];
 		tgm += item;//calculate mean
 	}
 
@@ -185,8 +196,9 @@ double teagerEnergy(float frame[]) {
 }
 
 
+/*
 void *DOAcalculation(void *null) {
-	Doa DOA(16000,8, 15360, SHIFT_SIZE);
+	Doa DOA(16000, 8, 15360, SHIFT_SIZE);
 	DOA.initialize();	
 	DoaOutput result;
 	uint32_t bufferSwitch = 0;
@@ -198,11 +210,50 @@ void *DOAcalculation(void *null) {
 	//------DOA thread------
 	while (true) {
 		pthread_mutex_lock(&normalizedBufferMutex[bufferSwitch]);
-		mq_receive(fromVad, (char*)&shiftVadStatus, 4, NULL); //blocking I/O
+		mq_receive(fromVad, (char*)&shiftVadStatus, 4, NULL); //blocking
 
 		result = DOA.processBuffer((float*)normalizedBuffer[bufferSwitch], (shiftVadStatus>0));
 		if (result.hasDOA)
 			std::cout << "theta1 = " << result.theta1 << " theta2 = " << result.theta2 << std::endl;
+
+		pthread_mutex_unlock(&normalizedBufferMutex[bufferSwitch]);
+		bufferSwitch = (bufferSwitch + 1) % 2;
+	}
+
+}
+*/
+
+
+void *DOAcalculation(void *null) {
+	uint32_t bufferSwitch = 0;
+	uint32_t name = 0;
+	bool fileWritten = false;
+
+	int32_t shiftVadStatus;
+
+	mqd_t fromVad = mq_open(VAD_DOA_Q, O_RDONLY);
+
+	std::string filename = "vad_" + std::to_string(name) + ".raw";
+	std::ofstream *file = new std::ofstream(filename, std::ofstream::binary);
+
+	//------DOA thread------
+	while (true) {
+		pthread_mutex_lock(&normalizedBufferMutex[bufferSwitch]);
+		mq_receive(fromVad, (char*)&shiftVadStatus, 4, NULL); //blocking
+
+		if (shiftVadStatus > 0) {
+			file->write((const char*)originalBuffer[bufferSwitch][0], SHIFT_SIZE * sizeof(int16_t));
+			fileWritten = true;
+		}
+		else if (fileWritten) {
+			file->close();
+			std::cout << "file closed" << std::endl;
+			name++;
+			filename = "vad_" + std::to_string(name) + ".pcm";
+			delete file;
+			file = new std::ofstream(filename, std::ofstream::binary);
+			fileWritten = false;
+		}
 
 		pthread_mutex_unlock(&normalizedBufferMutex[bufferSwitch]);
 		bufferSwitch = (bufferSwitch + 1) % 2;

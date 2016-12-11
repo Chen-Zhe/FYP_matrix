@@ -20,7 +20,6 @@ public:
 
 	void		initialize();
 	DoaOutput	processBuffer(float* buffer, bool vadPositive);
-	void		terminate();
 
 private:
 
@@ -80,7 +79,7 @@ private:
 	int         nonDOAFrames;
 
 // methods
-	void		creat_delayTable();
+	void		create_delayTable();
 	bool		ProcessDOA(bool vadPositive);
 	float    findMedian(list<float> mlist);
 };

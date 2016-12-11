@@ -87,7 +87,6 @@
     <ClInclude Include="doa\nr3.h" />
     <ClInclude Include="doa\svd.h" />
     <ClInclude Include="main\LedController.h" />
-    <ClInclude Include="main\sine_wave_simulator.h" />
     <ClInclude Include="matrix-hal\cpp\driver\circular_queue.h" />
     <ClInclude Include="matrix-hal\cpp\driver\creator_memory_map.h" />
     <ClInclude Include="matrix-hal\cpp\driver\dummy_data.h" />

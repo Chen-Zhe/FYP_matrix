@@ -81,8 +81,6 @@ int main() {
 
 	microphoneArray.Setup(&bus);
 
-	//float vadBuffer[FRAME_SIZE];
-
 	//------recorder thread------
 	while (true) {
 		uint32_t step = 0;
@@ -233,7 +231,7 @@ void *DOAcalculation(void *null) {
 
 	mqd_t fromVad = mq_open(VAD_DOA_Q, O_RDONLY);
 
-	std::string filename = "vad_" + std::to_string(name) + ".raw";
+	std::string filename = "vad_" + std::to_string(name) + ".pcm";
 	std::ofstream *file = new std::ofstream(filename, std::ofstream::binary);
 
 	//------DOA thread------

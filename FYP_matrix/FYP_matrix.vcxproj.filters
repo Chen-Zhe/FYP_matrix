@@ -155,8 +155,5 @@
     <ClInclude Include="doa\DoaOutput.h">
       <Filter>Library\DOA</Filter>
     </ClInclude>
-    <ClInclude Include="main\sine_wave_simulator.h">
-      <Filter>main</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>

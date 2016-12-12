@@ -157,7 +157,7 @@ void *voiceActivityDetector(void *null) {
 		if (frameCount == 0) {
 			frameCount = numFramesPerShift;//reset count-down counter
 
-			if (vadPositiveCount > 2 || (vadPositiveCount > 1 && extendVadFor1Frame)) {//voice activity detected
+			if (vadPositiveCount > 2 || (vadPositiveCount > 0 && extendVadFor1Frame)) {//voice activity detected
 				
 				if (vadPositiveCount > 2)
 					extendVadFor1Frame = true;

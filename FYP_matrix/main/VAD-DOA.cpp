@@ -3,10 +3,12 @@
 #include <fstream>
 #include <unistd.h>
 #include <string>
+#include <grpc++/grpc++.h>
 
 #include <pthread.h>
 #include <mqueue.h>
 #include <fcntl.h>
+#include <google/cloud/speech/v1beta1/cloud_speech.grpc.pb.h>
 
 #include "LedController.h"
 
@@ -222,6 +224,7 @@ void *DOAcalculation(void *null) {
 */
 
 
+//re-purposed for google's streaming speech transcription
 void *DOAcalculation(void *null) {
 	uint32_t bufferSwitch = 0;
 	uint32_t name = 0;

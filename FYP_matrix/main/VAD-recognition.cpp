@@ -244,11 +244,10 @@ void *SpeechEnhancement(void *null) {
 	grpc::ClientContext *context = new grpc::ClientContext();
 	RecognitionDataStreamer streamer = speech->StreamingRecognize(context);
 
-	mq_send(toRecognition, (char*)&streamer, msgSize, 0);
-
 	// Write the first request, containing the config only.	
 	streamer->Write(configRequest);
 
+	
 	StreamingRecognizeRequest streamingRequest;
 	std::vector<char> *data;
 	//------Speech Recognition thread------
@@ -257,10 +256,18 @@ void *SpeechEnhancement(void *null) {
 		mq_receive(fromVad, (char*)&shiftVadStatus, 4, NULL); //blocking
 
 		if (shiftVadStatus > 0) {
+			std::cout << "constructing data" << std::endl;
 			data = new std::vector<char>((char*)originalBuffer[bufferSwitch][0], (char*)originalBuffer[bufferSwitch][0] + SHIFT_SIZE * sizeof(int16_t));
+			std::cout << "setting content" << std::endl;
 			streamingRequest.set_audio_content(data, SHIFT_SIZE * sizeof(int16_t));
+			std::cout << "sending data" << std::endl;
 			streamer->Write(streamingRequest);
-			streamStarted = true;
+			std::cout << "next" << std::endl;
+			if (!streamStarted) {
+				streamStarted = true;
+				mq_send(toRecognition, (char*)&streamer, msgSize, 0);
+			}
+			
 			delete data;
 
 		}
@@ -290,6 +297,8 @@ void *StreamingSpeechRecognition(void *null) {
 
 	while(true){
 		mq_receive(fromEnhancer, (char*)&streamer, msgSize, NULL); //blocking
+		std::cout << "streamer reveived" << std::endl;
+
 		while (streamer->Read(&response)) {  // Returns false when no more to read.
 											 // Dump the transcript of all the results.
 			for (int r = 0; r < response.results_size(); ++r) {
@@ -302,6 +311,7 @@ void *StreamingSpeechRecognition(void *null) {
 				}
 			}
 		}
+		std::cout << "streamer deleted" << std::endl;
 		auto *rawPointer = streamer.release();
 		delete rawPointer;
 	}

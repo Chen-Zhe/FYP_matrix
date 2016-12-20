@@ -3,19 +3,22 @@
 #include <fstream>
 #include <unistd.h>
 #include <string>
-//#include <grpc++/grpc++.h>
+#include <grpc++/grpc++.h>
 
 #include <pthread.h>
 #include <mqueue.h>
 #include <fcntl.h>
-//#include <google/cloud/speech/v1beta1/cloud_speech.grpc.pb.h>
+#include <google/cloud/speech/v1beta1/cloud_speech.grpc.pb.h>
 
 #include "LedController.h"
 
 #include "../matrix-hal/cpp/driver/microphone_array.h"
 #include "../matrix-hal/cpp/driver/wishbone_bus.h"
 
-#include "../doa/Doa.h"
+using google::cloud::speech::v1beta1::RecognitionConfig;
+using google::cloud::speech::v1beta1::Speech;
+using google::cloud::speech::v1beta1::StreamingRecognizeRequest;
+using google::cloud::speech::v1beta1::StreamingRecognizeResponse;
 
 
 #define FRAME_SIZE 512
@@ -25,15 +28,19 @@ const int32_t numFramesPerShift = SHIFT_SIZE / FRAME_SIZE;
 const int32_t frameByteSize = FRAME_SIZE * sizeof(float);
 #define VAD_DOA_Q "/vad_doa_q"
 #define REC_VAD_Q "/rec_vad_q"
+#define ENC_RCO_Q "/enc_rco_q"
 
 namespace matrixCreator = matrix_hal;
 
 float teagerEnergy(float frame[]);
 void *voiceActivityDetector(void *null);
-void *DOAcalculation(void *null);
+void *SpeechEnhancement(void *null);
+void *StreamingSpeechRecognition(void *null);
 
 float normalizedBuffer[2][NUM_CHANNELS][SHIFT_SIZE];
 int16_t originalBuffer[2][NUM_CHANNELS][SHIFT_SIZE];
+
+typedef std::unique_ptr<grpc::ClientReaderWriter<StreamingRecognizeRequest,StreamingRecognizeResponse>> RecognitionDataStreamer;
 
 pthread_mutex_t normalizedBufferMutex[2] = { PTHREAD_MUTEX_INITIALIZER };
 
@@ -69,7 +76,7 @@ int main() {
 	vad_doa_attr.mq_maxmsg = 10;
 	vad_doa_attr.mq_msgsize = 4;
 	vad_doa_attr.mq_curmsgs = 0;
-	mqd_t vad_doa = mq_open(VAD_DOA_Q, O_CREAT, 0644, &vad_doa_attr);
+	mq_open(VAD_DOA_Q, O_CREAT, 0644, &vad_doa_attr);
 
 	int32_t buffer_switch = 0;
 
@@ -78,8 +85,10 @@ int main() {
 
 	pthread_t VAD;
 	pthread_t DOA;
+	
 	pthread_create(&VAD, NULL, voiceActivityDetector, (void *)NULL);
-	pthread_create(&DOA, NULL, DOAcalculation, (void *)NULL);
+	pthread_create(&DOA, NULL, SpeechEnhancement, (void *)NULL);
+	
 
 	microphoneArray.Setup(&bus);
 
@@ -196,68 +205,105 @@ float teagerEnergy(float frame[]) {
 }
 
 
-/*
-void *DOAcalculation(void *null) {
-	Doa DOA(16000, 8, 15360, SHIFT_SIZE);
-	DOA.initialize();	
-	DoaOutput result;
+//Enhance speech (not done) and directly stream the speech segment to Google Speech API
+void *SpeechEnhancement(void *null) {
 	uint32_t bufferSwitch = 0;
+	bool streamStarted = false;
+	int32_t msgSize = sizeof(RecognitionDataStreamer);
 
 	int32_t shiftVadStatus;
 
 	mqd_t fromVad = mq_open(VAD_DOA_Q, O_RDONLY);
 
-	//------DOA thread------
+	struct mq_attr attr;
+	attr.mq_flags = 0;
+	attr.mq_maxmsg = 10;
+	attr.mq_msgsize = msgSize;
+	attr.mq_curmsgs = 0;
+	mqd_t toRecognition = mq_open(ENC_RCO_Q, O_CREAT | O_WRONLY, 0644, &attr);
+	
+	pthread_t RCO;
+	pthread_create(&RCO, NULL, StreamingSpeechRecognition, (void *)NULL);
+
+	std::cout << msgSize << endl;
+
+	// Create a Speech Stub connected to the speech service.
+	auto creds = grpc::GoogleDefaultCredentials();
+	auto channel = grpc::CreateChannel("speech.googleapis.com", creds);
+	std::unique_ptr<Speech::Stub> speech(Speech::NewStub(channel));
+
+	// set streaming content
+	StreamingRecognizeRequest configRequest;
+	auto* streaming_config = configRequest.mutable_streaming_config();
+	streaming_config->mutable_config()->set_sample_rate(16000);
+	streaming_config->mutable_config()->set_encoding(RecognitionConfig::LINEAR16);
+	streaming_config->mutable_config()->set_language_code("en-US");
+	streaming_config->set_interim_results(true);
+
+	// Begin a stream
+	grpc::ClientContext *context = new grpc::ClientContext();
+	RecognitionDataStreamer streamer = speech->StreamingRecognize(context);
+
+	mq_send(toRecognition, (char*)&streamer, msgSize, 0);
+
+	// Write the first request, containing the config only.	
+	streamer->Write(configRequest);
+
+	StreamingRecognizeRequest streamingRequest;
+	std::vector<char> *data;
+	//------Speech Recognition thread------
 	while (true) {
 		pthread_mutex_lock(&normalizedBufferMutex[bufferSwitch]);
 		mq_receive(fromVad, (char*)&shiftVadStatus, 4, NULL); //blocking
 
-		result = DOA.processBuffer((float*)normalizedBuffer[bufferSwitch], (shiftVadStatus>0));
-		if (result.hasDOA)
-			std::cout << "theta1 = " << result.theta1 << " theta2 = " << result.theta2 << std::endl;
+		if (shiftVadStatus > 0) {
+			data = new std::vector<char>((char*)originalBuffer[bufferSwitch][0], (char*)originalBuffer[bufferSwitch][0] + SHIFT_SIZE * sizeof(int16_t));
+			streamingRequest.set_audio_content(data, SHIFT_SIZE * sizeof(int16_t));
+			streamer->Write(streamingRequest);
+			streamStarted = true;
+			delete data;
+
+		}
+		else if (streamStarted) {
+			streamer->WritesDone();
+			std::cout << "speech done" << std::endl;
+			delete context;
+			grpc::ClientContext *context = new grpc::ClientContext();
+			streamer = speech->StreamingRecognize(context);
+			streamer->Write(configRequest);
+			mq_send(toRecognition, (char*)&streamer, msgSize, 0);
+			streamStarted = false;
+		}
 
 		pthread_mutex_unlock(&normalizedBufferMutex[bufferSwitch]);
 		bufferSwitch = (bufferSwitch + 1) % 2;
 	}
 
 }
-*/
 
+void *StreamingSpeechRecognition(void *null) {
+	std::cout << "created" << std::endl;
+	StreamingRecognizeResponse response;
+	RecognitionDataStreamer streamer;
+	int32_t msgSize = sizeof(RecognitionDataStreamer);
+	mqd_t fromEnhancer = mq_open(ENC_RCO_Q, O_RDONLY);
 
-//re-purposed for google's streaming speech transcription
-void *DOAcalculation(void *null) {
-	uint32_t bufferSwitch = 0;
-	uint32_t name = 0;
-	bool fileWritten = false;
-
-	int32_t shiftVadStatus;
-
-	mqd_t fromVad = mq_open(VAD_DOA_Q, O_RDONLY);
-
-	std::string filename = "vad_" + std::to_string(name) + ".pcm";
-	std::ofstream *file = new std::ofstream(filename, std::ofstream::binary);
-
-	//------DOA thread------
-	while (true) {
-		pthread_mutex_lock(&normalizedBufferMutex[bufferSwitch]);
-		mq_receive(fromVad, (char*)&shiftVadStatus, 4, NULL); //blocking
-
-		if (shiftVadStatus > 0) {
-			file->write((const char*)originalBuffer[bufferSwitch][0], SHIFT_SIZE * sizeof(int16_t));
-			fileWritten = true;
+	while(true){
+		mq_receive(fromEnhancer, (char*)&streamer, msgSize, NULL); //blocking
+		while (streamer->Read(&response)) {  // Returns false when no more to read.
+											 // Dump the transcript of all the results.
+			for (int r = 0; r < response.results_size(); ++r) {
+				auto result = response.results(r);
+				std::cout << "Result stability: " << result.stability() << std::endl;
+				for (int a = 0; a < result.alternatives_size(); ++a) {
+					auto alternative = result.alternatives(a);
+					std::cout << alternative.confidence() << "\t"
+						<< alternative.transcript() << std::endl;
+				}
+			}
 		}
-		else if (fileWritten) {
-			file->close();
-			std::cout << "file closed" << std::endl;
-			name++;
-			filename = "vad_" + std::to_string(name) + ".pcm";
-			delete file;
-			file = new std::ofstream(filename, std::ofstream::binary);
-			fileWritten = false;
-		}
-
-		pthread_mutex_unlock(&normalizedBufferMutex[bufferSwitch]);
-		bufferSwitch = (bufferSwitch + 1) % 2;
+		auto *rawPointer = streamer.release();
+		delete rawPointer;
 	}
 
 }

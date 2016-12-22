@@ -261,6 +261,9 @@ void *SpeechEnhancement(void *null) {
 				streamStarted = true;
 				streamer->Write(configRequest);
 			}
+			else {
+				delete data;
+			}
 
 			std::cout << "constructing data" << std::endl;
 			data = new std::vector<char>((char*)originalBuffer[bufferSwitch][0], (char*)originalBuffer[bufferSwitch][0] + SHIFT_SIZE * sizeof(int16_t));
@@ -269,8 +272,6 @@ void *SpeechEnhancement(void *null) {
 			std::cout << "sending data" << std::endl;
 			streamer->Write(streamingRequest);
 			std::cout << "next" << std::endl;			
-			
-			delete data;
 
 		}
 		else if (streamStarted) {

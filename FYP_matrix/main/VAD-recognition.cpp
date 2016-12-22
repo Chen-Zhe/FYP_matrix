@@ -231,23 +231,23 @@ void *SpeechEnhancement(void *null) {
 	auto creds = grpc::GoogleDefaultCredentials();
 	auto channel = grpc::CreateChannel("speech.googleapis.com", creds);
 	std::unique_ptr<Speech::Stub> speech(Speech::NewStub(channel));
-
-	// set streaming content
+	// Parse command line arguments.
 	StreamingRecognizeRequest configRequest;
 	auto* streaming_config = configRequest.mutable_streaming_config();
+
 	streaming_config->mutable_config()->set_sample_rate(16000);
 	streaming_config->mutable_config()->set_encoding(RecognitionConfig::LINEAR16);
 	streaming_config->mutable_config()->set_language_code("en-US");
 	streaming_config->set_interim_results(true);
 
-	// Begin a stream
-	grpc::ClientContext *context = new grpc::ClientContext();
+	// Begin a stream.
+	grpc::ClientContext *context = new grpc::ClientContext;
 	RecognitionDataStreamer streamer = speech->StreamingRecognize(context);
-
-	// Write the first request, containing the config only.	
-	streamer->Write(configRequest);
-
 	
+	// Write the first request, containing the config only.
+	streamer->Write(configRequest);
+	mq_send(toRecognition, (char*)&streamer, msgSize, 0);
+
 	StreamingRecognizeRequest streamingRequest;
 	std::vector<char> *data;
 	//------Speech Recognition thread------
@@ -256,17 +256,19 @@ void *SpeechEnhancement(void *null) {
 		mq_receive(fromVad, (char*)&shiftVadStatus, 4, NULL); //blocking
 
 		if (shiftVadStatus > 0) {
+
+			if (!streamStarted) {
+				streamStarted = true;
+				streamer->Write(configRequest);
+			}
+
 			std::cout << "constructing data" << std::endl;
 			data = new std::vector<char>((char*)originalBuffer[bufferSwitch][0], (char*)originalBuffer[bufferSwitch][0] + SHIFT_SIZE * sizeof(int16_t));
-			std::cout << "setting content" << std::endl;
+			std::cout << "setting content " << data->size() << std::endl;
 			streamingRequest.set_audio_content(data, SHIFT_SIZE * sizeof(int16_t));
 			std::cout << "sending data" << std::endl;
 			streamer->Write(streamingRequest);
-			std::cout << "next" << std::endl;
-			if (!streamStarted) {
-				streamStarted = true;
-				mq_send(toRecognition, (char*)&streamer, msgSize, 0);
-			}
+			std::cout << "next" << std::endl;			
 			
 			delete data;
 
@@ -275,9 +277,13 @@ void *SpeechEnhancement(void *null) {
 			streamer->WritesDone();
 			std::cout << "speech done" << std::endl;
 			delete context;
+			std::cout << "streamer deleted" << std::endl;
+			auto *rawPointer = streamer.release();
+			delete rawPointer;
+
 			grpc::ClientContext *context = new grpc::ClientContext();
 			streamer = speech->StreamingRecognize(context);
-			streamer->Write(configRequest);
+
 			mq_send(toRecognition, (char*)&streamer, msgSize, 0);
 			streamStarted = false;
 		}
@@ -297,10 +303,11 @@ void *StreamingSpeechRecognition(void *null) {
 
 	while(true){
 		mq_receive(fromEnhancer, (char*)&streamer, msgSize, NULL); //blocking
-		std::cout << "streamer reveived" << std::endl;
+		std::cout << "streamer received" << std::endl;
 
 		while (streamer->Read(&response)) {  // Returns false when no more to read.
 											 // Dump the transcript of all the results.
+			std::cout << "response received" << std::endl;
 			for (int r = 0; r < response.results_size(); ++r) {
 				auto result = response.results(r);
 				std::cout << "Result stability: " << result.stability() << std::endl;
@@ -311,9 +318,13 @@ void *StreamingSpeechRecognition(void *null) {
 				}
 			}
 		}
-		std::cout << "streamer deleted" << std::endl;
-		auto *rawPointer = streamer.release();
-		delete rawPointer;
+		
+		grpc::Status status = streamer->Finish();
+		if (!status.ok()) {
+			// Report the RPC failure.
+			std::cerr << "RPC failure: " << status.error_message() << std::endl;
+			//If 'invalid authentication credential' error comes up, manually sync R-pi's time
+		}
 	}
 
 }

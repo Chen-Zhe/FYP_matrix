@@ -293,12 +293,12 @@ class WorkThread(threading.Thread):
         
 listenIp = "0.0.0.0"
 listenPort = 123
-soc = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-soc.bind((listenIp,listenPort))
-print "local socket: ", soc.getsockname();
-recvThread = RecvThread(soc)
+socket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+socket.bind((listenIp,listenPort))
+print "local socket: ", socket.getsockname();
+recvThread = RecvThread(socket)
 recvThread.start()
-workThread = WorkThread(soc)
+workThread = WorkThread(socket)
 workThread.start()
 
 raw_input("Press Enter to stop NTP server\n")
@@ -306,5 +306,5 @@ print "Exiting..."
 stopFlag = True
 recvThread.join()
 workThread.join()
-soc.close()
+socket.close()
 

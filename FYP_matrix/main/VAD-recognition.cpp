@@ -209,7 +209,7 @@ float teagerEnergy(float frame[]) {
 void *SpeechEnhancement(void *null) {
 	uint32_t bufferSwitch = 0;
 	bool streamStarted = false;
-	int32_t msgSize = sizeof(RecognitionDataStreamer);
+	const size_t dataChunkSize = SHIFT_SIZE * sizeof(int16_t);
 
 	int32_t shiftVadStatus;
 
@@ -218,14 +218,12 @@ void *SpeechEnhancement(void *null) {
 	struct mq_attr attr;
 	attr.mq_flags = 0;
 	attr.mq_maxmsg = 10;
-	attr.mq_msgsize = msgSize;
+	attr.mq_msgsize = 4;
 	attr.mq_curmsgs = 0;
 	mqd_t toRecognition = mq_open(ENC_RCO_Q, O_CREAT | O_WRONLY, 0644, &attr);
 	
 	pthread_t RCO;
 	pthread_create(&RCO, NULL, StreamingSpeechRecognition, (void *)NULL);
-
-	std::cout << msgSize << endl;
 
 	// Create a Speech Stub connected to the speech service.
 	auto creds = grpc::GoogleDefaultCredentials();
@@ -245,11 +243,10 @@ void *SpeechEnhancement(void *null) {
 	RecognitionDataStreamer streamer = speech->StreamingRecognize(context);
 	
 	// Write the first request, containing the config only.
-	streamer->Write(configRequest);
-	mq_send(toRecognition, (char*)&streamer, msgSize, 0);
+	mq_send(toRecognition, (char*)&streamer, 4, 0);
 
 	StreamingRecognizeRequest streamingRequest;
-	std::vector<char> *data;
+
 	//------Speech Recognition thread------
 	while (true) {
 		pthread_mutex_lock(&normalizedBufferMutex[bufferSwitch]);
@@ -261,31 +258,20 @@ void *SpeechEnhancement(void *null) {
 				streamStarted = true;
 				streamer->Write(configRequest);
 			}
-			else {
-				delete data;
-			}
 
-			std::cout << "constructing data" << std::endl;
-			data = new std::vector<char>((char*)originalBuffer[bufferSwitch][0], (char*)originalBuffer[bufferSwitch][0] + SHIFT_SIZE * sizeof(int16_t));
-			std::cout << "setting content " << data->size() << std::endl;
-			streamingRequest.set_audio_content(data, SHIFT_SIZE * sizeof(int16_t));
+			streamingRequest.set_audio_content((void *)originalBuffer[bufferSwitch][0], dataChunkSize);
 			std::cout << "sending data" << std::endl;
 			streamer->Write(streamingRequest);
-			std::cout << "next" << std::endl;			
-
 		}
 		else if (streamStarted) {
 			streamer->WritesDone();
 			std::cout << "speech done" << std::endl;
 			delete context;
-			std::cout << "streamer deleted" << std::endl;
-			auto *rawPointer = streamer.release();
-			delete rawPointer;
 
-			grpc::ClientContext *context = new grpc::ClientContext();
+			context = new grpc::ClientContext();
 			streamer = speech->StreamingRecognize(context);
 
-			mq_send(toRecognition, (char*)&streamer, msgSize, 0);
+			mq_send(toRecognition, (char*)&streamer, 4, 0);
 			streamStarted = false;
 		}
 
@@ -296,7 +282,6 @@ void *SpeechEnhancement(void *null) {
 }
 
 void *StreamingSpeechRecognition(void *null) {
-	std::cout << "created" << std::endl;
 	StreamingRecognizeResponse response;
 	RecognitionDataStreamer streamer;
 	int32_t msgSize = sizeof(RecognitionDataStreamer);
@@ -322,10 +307,13 @@ void *StreamingSpeechRecognition(void *null) {
 		
 		grpc::Status status = streamer->Finish();
 		if (!status.ok()) {
-			// Report the RPC failure.
-			std::cerr << "RPC failure: " << status.error_message() << std::endl;
+			std::cerr << "RPC: " << status.error_message() << std::endl;
 			//If 'invalid authentication credential' error comes up, manually sync R-pi's time
 		}
+
+		std::cout << "streamer deleted" << std::endl;
+		auto *rawPointer = streamer.release();
+		delete rawPointer;
 	}
 
 }

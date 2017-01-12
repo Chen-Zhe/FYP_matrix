@@ -1,5 +1,4 @@
 import socket
-import datetime
 import wave
 import threading
 
@@ -23,7 +22,7 @@ class RecordStream(threading.Thread):
         bytes_received = 0
 
         while bytes_received<expected_bytes:
-            file_buffer = connection.recv(4096) # it will not always receive 4096 bytes
+            file_buffer = connection.recv(4096) # it will not always receive the specified bytes
 
             file_buffer_length = len(file_buffer)
             bytes_received += file_buffer_length

@@ -6,7 +6,7 @@
     <ProjectGuid>e16fe710-7d03-46db-87f1-e727326ddfa1</ProjectGuid>
     <ProjectHome>
     </ProjectHome>
-    <StartupFile>pc.py</StartupFile>
+    <StartupFile>pc-recorder.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -25,7 +25,8 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="pc.py" />
+    <Compile Include="pc-transcript.py" />
+    <Compile Include="pc-recorder.py" />
   </ItemGroup>
   <ItemGroup>
     <InterpreterReference Include="{9a7a9026-48c1-4688-9d5d-e5699d47d074}\2.7" />

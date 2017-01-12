@@ -10,6 +10,11 @@
 #include <fcntl.h>
 #include <google/cloud/speech/v1beta1/cloud_speech.grpc.pb.h>
 
+
+#include <libsocket/inetserverstream.hpp>
+#include <libsocket/exception.hpp>
+#include <libsocket/socket.hpp>
+
 #include "LedController.h"
 
 #include "../matrix-hal/cpp/driver/microphone_array.h"
@@ -46,6 +51,10 @@ pthread_mutex_t normalizedBufferMutex[2] = { PTHREAD_MUTEX_INITIALIZER };
 
 LedController *LedCon;
 
+bool running = true;
+
+std::unique_ptr<libsocket::inet_stream> transcriptReceiver;
+
 int main() {
 	//initilization of all message queues, parameters, devices, etc.
 
@@ -59,6 +68,21 @@ int main() {
 
 	for (matrixCreator::LedValue& led : LedCon->Image.leds) {
 		led.red = 10;
+	}
+
+	
+	try {
+		libsocket::inet_stream_server tcpServer("0.0.0.0", "8000", LIBSOCKET_IPv4);
+
+		//signal the user that the server is ready
+		std::cout << "Ready to accept transcript connection" << std::endl;
+
+		transcriptReceiver = tcpServer.accept2();
+	}
+	catch (const libsocket::socket_exception& exc)
+	{
+		std::cout << exc.mesg << std::endl;
+		return 0;
 	}
 
 	//------init all queues------
@@ -93,7 +117,7 @@ int main() {
 	microphoneArray.Setup(&bus);
 
 	//------recorder thread------
-	while (true) {
+	while (running) {
 		uint32_t step = 0;
 		while (step < SHIFT_SIZE) {
 
@@ -145,7 +169,7 @@ void *voiceActivityDetector(void *null) {
 	mqd_t toDoa = mq_open(VAD_DOA_Q, O_WRONLY);
 
 	//------VAD thread------
-	while (true) {
+	while (running) {
 
 		frameCount--;//count-down counters
 		
@@ -248,7 +272,7 @@ void *SpeechEnhancement(void *null) {
 	StreamingRecognizeRequest streamingRequest;
 
 	//------Speech Recognition thread------
-	while (true) {
+	while (running) {
 		pthread_mutex_lock(&normalizedBufferMutex[bufferSwitch]);
 		mq_receive(fromVad, (char*)&shiftVadStatus, 4, NULL); //blocking
 
@@ -300,14 +324,24 @@ void *StreamingSpeechRecognition(void *null) {
 		while (streamer->Read(&response)) {  // Returns false when no more to read.
 											 // Dump the transcript of all the results.
 			std::cout << "response received" << std::endl;
-			for (int r = 0; r < response.results_size(); ++r) {
-				auto result = response.results(r);
-				std::cout << "Result stability: " << result.stability() << std::endl;
-				for (int a = 0; a < result.alternatives_size(); ++a) {
-					auto alternative = result.alternatives(a);
-					std::cout << alternative.confidence() << "\t"
-						<< alternative.transcript() << std::endl;
+			try {
+				for (int r = 0; r < response.results_size(); ++r) {
+					auto result = response.results(r);
+					*transcriptReceiver << "Result stability: " << std::to_string(result.stability()) << "\n";
+					for (int a = 0; a < result.alternatives_size(); ++a) {
+						auto alternative = result.alternatives(a);
+						*transcriptReceiver << std::to_string(alternative.confidence()) << "\t"
+							<< alternative.transcript() << "\n";
+					}
 				}
+
+			}
+
+			catch (const libsocket::socket_exception& exc)
+			{
+				std::cout << "Network Disconnected" << std::endl;
+				running = false;
+				pthread_exit(NULL);//terminate itself
 			}
 		}
 	}

@@ -1,4 +1,4 @@
-import socket
+from socket import *
 
 class device():
     def __init__(self,name,addr,connection):
@@ -8,15 +8,8 @@ class device():
 
 
 def discoverDevices(subnet):
-    subnet = "192.168."+subnet+"."
-    devices = []
-    for i in range(100,250):
-        ip = subnet+str(i)
-        print ip
-        try:
-            connection = socket.socket()
-            connection.connect((ip, 8000))
-            devices.append(device(connection.recv(3),ip,connection))
-        except:
-            pass
-    return devices
+    s=socket(AF_INET, SOCK_DGRAM)
+    s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+    s.sendto('Remote',('255.255.255.255',8001))
+
+    #return devices

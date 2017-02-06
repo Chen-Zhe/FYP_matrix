@@ -7,6 +7,7 @@
 #include <valarray>
 
 #include <libsocket/inetserverstream.hpp>
+#include <libsocket/inetserverdgram.hpp>
 #include <libsocket/exception.hpp>
 #include <libsocket/socket.hpp>
 #include <libsocket/select.hpp>
@@ -25,6 +26,7 @@
 void *networkStream(void* null);
 void *record2Remote(void* null);
 void *record2Disk(void* null);
+void *broadcastReceiver(void *null);
 
 namespace matrixCreator = matrix_hal;
 
@@ -50,14 +52,17 @@ int main() {
 	microphoneArray.Setup(&bus);
 
 	LedCon = new LedController(&bus);
-	
+
+	pthread_t udpThread;//spawn networking thread and pass the connection
+	pthread_create(&udpThread, NULL, broadcastReceiver, NULL);
+
 	//wait for network connection
 	
 	try {
 		libsocket::inet_stream_server tcpServer("0.0.0.0", "8000", LIBSOCKET_IPv4);
 
 		//stand by
-		std::cout << hostname << " - TCP server ready" << std::endl;
+		std::cout << hostname << " - TCP server listening" << std::endl;
 		for (matrixCreator::LedValue& led : LedCon->Image.leds) {
 			led.red = 0; led.green = 0; led.blue = 8;
 		}
@@ -108,6 +113,30 @@ int main() {
 	return 0;
 }
 
+void *broadcastReceiver(void *null) {
+
+	while (true) {
+		try {
+			libsocket::inet_dgram_server udpServer("0.0.0.0", "8001", LIBSOCKET_IPv4);
+
+			//stand by
+			std::cout << hostname << " - UDP server listening" << std::endl;
+
+		}
+		catch (const libsocket::socket_exception& exc)
+		{
+			//error
+			for (matrixCreator::LedValue& led : LedCon->Image.leds) {
+				led.red = 8; led.green = 0; led.blue = 0;
+			}
+			LedCon->updateLed();
+
+			std::cout << exc.mesg << std::endl;
+			return 0;
+		}
+	}
+	
+}
 
 void *record2Remote(void* null) {
 	uint32_t buffer_switch = 0;

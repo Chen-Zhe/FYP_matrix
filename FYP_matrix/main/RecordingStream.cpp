@@ -16,20 +16,21 @@
 #include "../matrix-hal/cpp/driver/microphone_array.h"
 #include "../matrix-hal/cpp/driver/wishbone_bus.h"
 
+#include "LedController.h"
+
 #define BUFFER_SAMPLES_PER_CHANNEL	16384 //around 1 second, power of 2 for networking, trucation at PC side
 #define HOST_NAME_MAX				20 //maximum number of characters for host name
 #define STREAMING_CHANNELS			8 //Maxmium 8 channels
 
-void *networkStream(void *null);
+void *networkStream(void* null);
+void *record2Remote(void* null);
+void *record2Disk(void* null);
 
 namespace matrixCreator = matrix_hal;
 
-struct LED {
-	matrixCreator::Everloop Driver;
-	matrixCreator::EverloopImage Image;
-};
+LedController *LedCon;
+matrixCreator::MicrophoneArray microphoneArray;
 
-struct LED ledRing; // Red = error, Blue = ready, Green = complete
 char hostname[HOST_NAME_MAX];
 bool networkConnected = false;
 
@@ -38,32 +39,39 @@ int16_t buffer[2][BUFFER_SAMPLES_PER_CHANNEL][STREAMING_CHANNELS];
 
 pthread_mutex_t bufferMutex[2] = { PTHREAD_MUTEX_INITIALIZER };
 
+std::unique_ptr<libsocket::inet_stream> tcpConnection;
+
 int main() {
 	gethostname(hostname, HOST_NAME_MAX);
 
 	matrixCreator::WishboneBus bus;
 	bus.SpiInit();
 
-	matrixCreator::MicrophoneArray microphoneArray;
-	
-	ledRing.Driver.Setup(&bus);
+	microphoneArray.Setup(&bus);
+
+	LedCon = new LedController(&bus);
 	
 	//wait for network connection
-	std::unique_ptr<libsocket::inet_stream> tcpConnection;
+	
 	try {
 		libsocket::inet_stream_server tcpServer("0.0.0.0", "8000", LIBSOCKET_IPv4);
 
-		//signal the user that the server is ready
+		//stand by
 		std::cout << hostname << " - TCP server ready" << std::endl;
-		for (auto& led : ledRing.Image.leds) { led.red = 0; led.green = 0; led.blue = 8; }
-		ledRing.Driver.Write(&ledRing.Image);
+		for (matrixCreator::LedValue& led : LedCon->Image.leds) {
+			led.red = 0; led.green = 0; led.blue = 8;
+		}
+		LedCon->updateLed();
 		
 		tcpConnection = tcpServer.accept2();
 	}
 	catch (const libsocket::socket_exception& exc)
 	{
-		for (auto& led : ledRing.Image.leds) { led.red = 8; led.green = 0; led.blue = 0; }
-		ledRing.Driver.Write(&ledRing.Image);
+		//error
+		for (matrixCreator::LedValue& led : LedCon->Image.leds) {
+			led.red = 8; led.green = 0; led.blue = 0;
+		}
+		LedCon->updateLed();
 
 		std::cout << exc.mesg << std::endl;
 		return 0;
@@ -71,19 +79,46 @@ int main() {
 	
 	networkConnected = true;
 
+	//connected
+	for (matrixCreator::LedValue& led : LedCon->Image.leds) {
+		led.red = 0; led.green = 8; led.blue = 0;
+	}
+	LedCon->updateLed();
+	
+	*tcpConnection << hostname;
+	pthread_t recorderThread;
+	char command;
+	tcpConnection->rcv(&command,1);
+	
+	switch (command) {
+	case 'N':pthread_create(&recorderThread, NULL, record2Remote, NULL); break;
+	case 'L':pthread_create(&recorderThread, NULL, record2Disk, NULL); break;
+	//case 'R':
+	default: return 1;
+	}
+
+	LedCon->turnOffLed();
+	
+	pthread_join(recorderThread, NULL);
+
+	LedCon->updateLed();
+	sleep(1);
+	LedCon->turnOffLed();
+
+	return 0;
+}
+
+
+void *record2Remote(void* null) {
 	uint32_t buffer_switch = 0;
 	//lock down buffer 0 before spawning streaming thread
 	pthread_mutex_lock(&bufferMutex[buffer_switch]);
 
 	pthread_t networkStreamingThread;//spawn networking thread and pass the connection
-	pthread_create(&networkStreamingThread, NULL, networkStream, (void *)&tcpConnection);
+	pthread_create(&networkStreamingThread, NULL, networkStream, NULL);
 
-	for (auto& led : ledRing.Image.leds) { led.red = 0; led.green = 0; led.blue = 0; }
-	ledRing.Driver.Write(&ledRing.Image);
 
-	microphoneArray.Setup(&bus);
-
-	while (networkConnected){
+	while (networkConnected) {
 		uint32_t step = 0;
 		while (step < BUFFER_SAMPLES_PER_CHANNEL) {
 
@@ -101,38 +136,28 @@ int main() {
 		}
 		pthread_mutex_lock(&bufferMutex[(buffer_switch + 1) % 2]);
 		pthread_mutex_unlock(&bufferMutex[buffer_switch]);
-		std::cout << "Buffer " << buffer_switch << " Recorded" << std::endl;
+		//std::cout << "Buffer " << buffer_switch << " Recorded" << std::endl;
 		buffer_switch = (buffer_switch + 1) % 2;
 	}
 
 	//end of the program, signal the user that recording have been completed
 	std::cout << "------ Recording ended ------" << std::endl;
+	pthread_join(networkStreamingThread, NULL);
+}
 
-	for (auto& led : ledRing.Image.leds) { led.red = 0;led.green = 8;led.blue = 0; }
-	ledRing.Driver.Write(&ledRing.Image);
+void *record2Disk(void* null) {
 
-	sleep(1);
-
-	for (auto& led : ledRing.Image.leds) { led.red = 0; led.green = 0; led.blue = 0; }
-	ledRing.Driver.Write(&ledRing.Image);
-
-	return 0;
 }
 
 
-void *networkStream(void *connectionPointer)
+void *networkStream(void* null)
 {
-	using std::unique_ptr;
-	using libsocket::inet_stream;
-
 	uint32_t bufferSwitch = 0;
-	unique_ptr<inet_stream> *tcpConnection = (unique_ptr<inet_stream> *) connectionPointer;
 	while (true) {
 		pthread_mutex_lock(&bufferMutex[bufferSwitch]);
 
 		try {
-			(*tcpConnection)->
-				snd(buffer[bufferSwitch], STREAMING_CHANNELS * BUFFER_SAMPLES_PER_CHANNEL * 2);
+			tcpConnection->snd(buffer[bufferSwitch], STREAMING_CHANNELS * BUFFER_SAMPLES_PER_CHANNEL * 2);
 			//std::cout << "sending" << std::endl;
 		}
 		catch (const libsocket::socket_exception& exc)
@@ -145,7 +170,7 @@ void *networkStream(void *connectionPointer)
 		}
 
 		pthread_mutex_unlock(&bufferMutex[bufferSwitch]);
-		std::cout << "Buffer " << bufferSwitch << " Sent" << std::endl;
+		//std::cout << "Buffer " << bufferSwitch << " Sent" << std::endl;
 		bufferSwitch = (bufferSwitch + 1) % 2;
 	}
 }

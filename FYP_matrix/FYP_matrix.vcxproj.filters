@@ -49,7 +49,7 @@
     <ClCompile Include="doa\DoaFuncs.cpp">
       <Filter>Library\DOA</Filter>
     </ClCompile>
-    <ClCompile Include="main\VAD-recognition.cpp">
+    <ClCompile Include="main\RecordingStream.cpp">
       <Filter>main</Filter>
     </ClCompile>
   </ItemGroup>

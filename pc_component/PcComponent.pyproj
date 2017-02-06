@@ -25,8 +25,17 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="mgmt-console.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="pc-transcript.py" />
     <Compile Include="pc-recorder.py" />
+    <Compile Include="pimatrix.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="recordingStream.py">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <InterpreterReference Include="{9a7a9026-48c1-4688-9d5d-e5699d47d074}\2.7" />

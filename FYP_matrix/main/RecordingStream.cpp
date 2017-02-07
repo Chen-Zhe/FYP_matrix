@@ -26,7 +26,9 @@
 void *networkStream(void* null);
 void *record2Remote(void* null);
 void *record2Disk(void* null);
-void *broadcastReceiver(void *null);
+void *udpBroadcastReceiver(void *null);
+
+void * recorder(void * null);
 
 namespace matrixCreator = matrix_hal;
 
@@ -43,6 +45,8 @@ pthread_mutex_t bufferMutex[2] = { PTHREAD_MUTEX_INITIALIZER };
 
 std::unique_ptr<libsocket::inet_stream> tcpConnection;
 
+char status = 'I';
+
 int main() {
 	gethostname(hostname, HOST_NAME_MAX);
 
@@ -53,13 +57,13 @@ int main() {
 
 	LedCon = new LedController(&bus);
 
-	pthread_t udpThread;//spawn networking thread and pass the connection
-	pthread_create(&udpThread, NULL, broadcastReceiver, NULL);
+	pthread_t udpThread;
+	pthread_create(&udpThread, NULL, udpBroadcastReceiver, NULL);
 
 	//wait for network connection
-	
-	try {
-		libsocket::inet_stream_server tcpServer("0.0.0.0", "8000", LIBSOCKET_IPv4);
+	while(true){
+		try {
+			libsocket::inet_stream_server tcpServer("0.0.0.0", "8000", LIBSOCKET_IPv4);
 
 		//stand by
 		std::cout << hostname << " - TCP server listening :8000\n";
@@ -68,43 +72,43 @@ int main() {
 		}
 		LedCon->updateLed();
 		
-		tcpConnection = tcpServer.accept2();
-	}
-	catch (const libsocket::socket_exception& exc)
-	{
-		//error
+			tcpConnection = tcpServer.accept2();
+		}
+		catch (const libsocket::socket_exception& exc)
+		{
+			//error
+			for (matrixCreator::LedValue& led : LedCon->Image.leds) {
+				led.red = 8; led.green = 0; led.blue = 0;
+			}
+			LedCon->updateLed();
+
+			std::cout << exc.mesg << std::endl;
+		}
+	
+		networkConnected = true;
+
+		//connected
 		for (matrixCreator::LedValue& led : LedCon->Image.leds) {
-			led.red = 8; led.green = 0; led.blue = 0;
+			led.red = 0; led.green = 8; led.blue = 0;
 		}
 		LedCon->updateLed();
+	
+		*tcpConnection << hostname;
+		pthread_t recorderThread;
+		char command;
+		tcpConnection->rcv(&command,1);
+	
+		switch (command) {
+		case 'N':pthread_create(&recorderThread, NULL, recorder, NULL); break;
+		case 'L':pthread_create(&recorderThread, NULL, recorder, NULL); break;
+		case 'T': system("sudo shutdown now");
+		//case 'R':
+		default: std::cout << "unrecognized command" << std::endl;
+		}
 
-		std::cout << exc.mesg << std::endl;
-		return 0;
+		LedCon->turnOffLed();
 	}
-	
-	networkConnected = true;
-
-	//connected
-	for (matrixCreator::LedValue& led : LedCon->Image.leds) {
-		led.red = 0; led.green = 8; led.blue = 0;
-	}
-	LedCon->updateLed();
-	
-	*tcpConnection << hostname;
-	pthread_t recorderThread;
-	char command;
-	tcpConnection->rcv(&command,1);
-	
-	switch (command) {
-	case 'N':pthread_create(&recorderThread, NULL, record2Remote, NULL); break;
-	case 'L':pthread_create(&recorderThread, NULL, record2Disk, NULL); break;
-	//case 'R':
-	default: return 1;
-	}
-
-	LedCon->turnOffLed();
-	
-	pthread_join(recorderThread, NULL);
+	//pthread_join(recorderThread, NULL);
 
 	LedCon->updateLed();
 	sleep(1);
@@ -147,7 +151,7 @@ void *broadcastReceiver(void *null) {
 	
 }
 
-void *record2Remote(void* null) {
+void *recorder(void* null) {
 	uint32_t buffer_switch = 0;
 	//lock down buffer 0 before spawning streaming thread
 	pthread_mutex_lock(&bufferMutex[buffer_switch]);
@@ -180,7 +184,6 @@ void *record2Remote(void* null) {
 
 	//end of the program, signal the user that recording have been completed
 	std::cout << "------ Recording ended ------" << std::endl;
-	pthread_join(networkStreamingThread, NULL);
 }
 
 void *record2Disk(void* null) {
@@ -188,7 +191,7 @@ void *record2Disk(void* null) {
 }
 
 
-void *networkStream(void* null)
+void *record2Remote(void* null)
 {
 	uint32_t bufferSwitch = 0;
 	while (true) {

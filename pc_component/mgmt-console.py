@@ -3,7 +3,7 @@ import threading
 import recordingStream
 import pimatrix
 
-devices=[]
+deviceMan = pimatrix.deviceManager()
 
 print "Welcome to Pi-Matrix Management Console"
 print "Please select one of the following functionalities"
@@ -14,12 +14,14 @@ print "4. Use device as LVCSR"
 print "5. Shutdown all devices"
 print "0. Disconnect from all devices"
 
-choice = input("Choice: ");
-if choice == 1:
-    subnet = raw_input("Please complete the current subnet address 192.168.(0~255): ")
-    devices = pimatrix.discoverDevices(subnet)
-    print len(devices)
+while(True):
+    choice = input("Choice: ");
+    if choice == 1:
+        print "Please wait...Scanning..."
+        deviceMan.discoverDevices()
+        deviceMan.tabulateDevice()
 
-elif choice == 5:
-    if raw_input("Are you sure? (y/n)") == "y":
-        pass
+    elif choice == 5:
+        if raw_input("Are you sure? (y/n)") == "y":
+            deviceMan.sendCommand("T")
+            break

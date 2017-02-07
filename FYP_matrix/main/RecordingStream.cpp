@@ -11,6 +11,7 @@
 #include <libsocket/exception.hpp>
 #include <libsocket/socket.hpp>
 #include <libsocket/select.hpp>
+#include <sys/socket.h>
 
 #include "../matrix-hal/cpp/driver/everloop_image.h"
 #include "../matrix-hal/cpp/driver/everloop.h"
@@ -20,10 +21,10 @@
 #include "LedController.h"
 
 #define BUFFER_SAMPLES_PER_CHANNEL	16384 //around 1 second, power of 2 for networking, trucation at PC side
-#define HOST_NAME_MAX				20 //maximum number of characters for host name
+#define HOST_NAME_LENGTH			20 //maximum number of characters for host name
+#define COMMAND_LENGTH				1
 #define STREAMING_CHANNELS			8 //Maxmium 8 channels
 
-void *networkStream(void* null);
 void *record2Remote(void* null);
 void *record2Disk(void* null);
 void *udpBroadcastReceiver(void *null);
@@ -35,7 +36,8 @@ namespace matrixCreator = matrix_hal;
 LedController *LedCon;
 matrixCreator::MicrophoneArray microphoneArray;
 
-char hostname[HOST_NAME_MAX];
+char sysInfo[COMMAND_LENGTH + HOST_NAME_LENGTH];
+
 bool networkConnected = false;
 
 //double buffer of SAMPLES_PER_CHANNEL*8 samples each
@@ -45,34 +47,38 @@ pthread_mutex_t bufferMutex[2] = { PTHREAD_MUTEX_INITIALIZER };
 
 std::unique_ptr<libsocket::inet_stream> tcpConnection;
 
-char status = 'I';
+char* status = &sysInfo[0];
+char* hostname = &sysInfo[1];
 
 int main() {
-	gethostname(hostname, HOST_NAME_MAX);
-
+	gethostname(hostname, HOST_NAME_LENGTH);
+	*status = 'I';
 	matrixCreator::WishboneBus bus;
 	bus.SpiInit();
 
 	microphoneArray.Setup(&bus);
 
 	LedCon = new LedController(&bus);
+	char command = '\0';
 
 	pthread_t udpThread;
 	pthread_create(&udpThread, NULL, udpBroadcastReceiver, NULL);
+	
+	//stand by
+	libsocket::inet_stream_server tcpServer("0.0.0.0", "8000", LIBSOCKET_IPv4);
+	std::cout << hostname << " - TCP server listening :8000\n";
+
+	for (matrixCreator::LedValue& led : LedCon->Image.leds) {
+		led.red = 0; led.green = 0; led.blue = 8;
+	}
+	LedCon->updateLed();
 
 	//wait for network connection
 	while(true){
 		try {
-			libsocket::inet_stream_server tcpServer("0.0.0.0", "8000", LIBSOCKET_IPv4);
 
-		//stand by
-		std::cout << hostname << " - TCP server listening :8000\n";
-		for (matrixCreator::LedValue& led : LedCon->Image.leds) {
-			led.red = 0; led.green = 0; led.blue = 8;
-		}
-		LedCon->updateLed();
+		tcpConnection = tcpServer.accept2();	
 		
-			tcpConnection = tcpServer.accept2();
 		}
 		catch (const libsocket::socket_exception& exc)
 		{
@@ -84,7 +90,7 @@ int main() {
 
 			std::cout << exc.mesg << std::endl;
 		}
-	
+				
 		networkConnected = true;
 
 		//connected
@@ -92,20 +98,21 @@ int main() {
 			led.red = 0; led.green = 8; led.blue = 0;
 		}
 		LedCon->updateLed();
-	
-		*tcpConnection << hostname;
+
+		tcpConnection->snd(sysInfo, COMMAND_LENGTH + HOST_NAME_LENGTH);
+
 		pthread_t recorderThread;
-		char command;
-		tcpConnection->rcv(&command,1);
-	
+
+		tcpConnection->rcv(&command, 1, MSG_WAITALL);
+
 		switch (command) {
 		case 'N':pthread_create(&recorderThread, NULL, recorder, NULL); break;
 		case 'L':pthread_create(&recorderThread, NULL, recorder, NULL); break;
-		case 'T': system("sudo shutdown now");
+		case 'T': LedCon->turnOffLed(); system("sudo shutdown now"); break;
 		//case 'R':
 		default: std::cout << "unrecognized command" << std::endl;
 		}
-
+		command = '\0';
 		LedCon->turnOffLed();
 	}
 	//pthread_join(recorderThread, NULL);
@@ -117,25 +124,28 @@ int main() {
 	return 0;
 }
 
-void *broadcastReceiver(void *null) {
-	string from1;
-	string from2;
+void *udpBroadcastReceiver(void *null) {
+	string remoteIP;
+	string remotePort;
+	string buffer;
 
-	from1.resize(64);
-	from2.resize(64);
-	string buf;
+	remoteIP.resize(16);
+	remotePort.resize(16);
+	buffer.resize(32);
+	
+	//start server
+	libsocket::inet_dgram_server udpServer("0.0.0.0", "8001", LIBSOCKET_IPv4);	
+	std::cout << hostname << " - UDP server listening :8001\n";
 
-	buf.resize(32);
 	while (true) {
 		try {
-			libsocket::inet_dgram_server udpServer("0.0.0.0", "8001", LIBSOCKET_IPv4);
+			udpServer.rcvfrom(buffer, remoteIP, remotePort);
 
-			//stand by
-			std::cout << hostname << " - UDP server listening :8001\n";
-
-			udpServer.rcvfrom(buf, from1, from2);
-
-			std::cout << "Answer from " << from1 << ":" << from2 << " - " << buf << " - " << buf.size() << std::endl;
+			if (buffer.compare("Remote") == 0) {
+				std::cout << "Remote PC at " << remoteIP << ":" << remotePort << std::endl;
+				udpServer.sndto("PiMatrix", remoteIP, remotePort);
+			}
+			
 		}
 		catch (const libsocket::socket_exception& exc)
 		{
@@ -157,7 +167,7 @@ void *recorder(void* null) {
 	pthread_mutex_lock(&bufferMutex[buffer_switch]);
 
 	pthread_t networkStreamingThread;//spawn networking thread and pass the connection
-	pthread_create(&networkStreamingThread, NULL, networkStream, NULL);
+	pthread_create(&networkStreamingThread, NULL, record2Remote, NULL);
 
 
 	while (networkConnected) {

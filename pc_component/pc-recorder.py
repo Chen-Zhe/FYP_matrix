@@ -31,8 +31,8 @@ class RecordStream(threading.Thread):
             if bytes_received>=expected_bytes:
                 self.seconds_recorded +=1
                 if self.seconds_recorded == 60:
-                    minutes_recorded +=1
-                    seconds_recorded =0
+                    self.minutes_recorded +=1
+                    self.seconds_recorded =0
                 print self.minutes_recorded, "minutes", self.seconds_recorded, "seconds recorded\r",
                 if self.continue_recording:
                     bytes_received = bytes_received-expected_bytes                    

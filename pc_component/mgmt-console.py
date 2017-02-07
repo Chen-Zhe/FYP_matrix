@@ -1,27 +1,60 @@
-import socket
 import threading
 import recordingStream
 import pimatrix
 
 deviceMan = pimatrix.deviceManager()
 
-print "Welcome to Pi-Matrix Management Console"
-print "Please select one of the following functionalities"
-print "1. Discover devices"
-print "2. Record over network"
-print "3. Reocrd to disk"
-print "4. Use device as LVCSR"
-print "5. Shutdown all devices"
-print "0. Disconnect from all devices"
+
+def printMenu():
+    print "\n"
+    print "Welcome to Pi-Matrix Management Console"
+    print "Device connected:", deviceMan.numDevices, "\n"
+    print "1. Discover devices"
+    if deviceMan.numDevices > 0:
+        print "2. Connected devices' detail"
+        print "----------------------------"
+        print "3. Record over network"
+        print "4. Reocrd to disk"
+        print "5. Use device as LVCSR"
+        print "----------------------"
+        print "9. Disconnect from all devices"
+        print "0. Shutdown all devices"
 
 while(True):
+    printMenu()
     choice = input("Choice: ");
     if choice == 1:
-        print "Please wait...Scanning..."
+        print "Scanning......"
         deviceMan.discoverDevices()
         deviceMan.tabulateDevice()
+    
+    elif choice == 2:
+        deviceMan.tabulateDevice()
+
+    elif choice == 3:
+        deviceMan.sendCommand("rec2net")
+
+    elif choice == 4:
+        deviceMan.sendCommand("rec2sd")
 
     elif choice == 5:
-        if raw_input("Are you sure? (y/n)") == "y":
-            deviceMan.sendCommand("T")
+        pass
+
+    elif choice == 9:
+        if raw_input("Disconnect from all devices? (y/n)") == "y":
+            deviceMan.disconnectAll()
             break
+        else:
+            print "Abort"
+    
+    elif choice == 0:
+        if raw_input("Shutdown all devices? (y/n)") == "y":
+            deviceMan.sendCommand("shutdown")
+            break
+        else:
+            print "Abort"
+    else:
+        print "Not a valid choice"
+
+print "Thank you for using Pi-Matrix Management Console"
+print "Have a nice day!"

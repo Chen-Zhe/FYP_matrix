@@ -5,13 +5,15 @@
 #include <string>
 #include <iostream>
 #include <valarray>
+#include <sstream>
+#include <fstream>
+#include <sys/socket.h>
 
 #include <libsocket/inetserverstream.hpp>
 #include <libsocket/inetserverdgram.hpp>
 #include <libsocket/exception.hpp>
 #include <libsocket/socket.hpp>
 #include <libsocket/select.hpp>
-#include <sys/socket.h>
 
 #include "../matrix-hal/cpp/driver/everloop_image.h"
 #include "../matrix-hal/cpp/driver/everloop.h"
@@ -33,19 +35,21 @@ void * recorder(void * null);
 
 namespace matrixCreator = matrix_hal;
 
+using namespace std;
+
 LedController *LedCon;
 matrixCreator::MicrophoneArray microphoneArray;
 
 char sysInfo[COMMAND_LENGTH + HOST_NAME_LENGTH];
 
-bool networkConnected = false;
-
+bool recordToRemote = false;
+bool recording = false;
 //double buffer of SAMPLES_PER_CHANNEL*8 samples each
 int16_t buffer[2][BUFFER_SAMPLES_PER_CHANNEL][STREAMING_CHANNELS];
 
 pthread_mutex_t bufferMutex[2] = { PTHREAD_MUTEX_INITIALIZER };
 
-std::unique_ptr<libsocket::inet_stream> tcpConnection;
+unique_ptr<libsocket::inet_stream> tcpConnection;
 
 char* status = &sysInfo[0];
 char* hostname = &sysInfo[1];
@@ -66,7 +70,7 @@ int main() {
 	
 	//stand by
 	libsocket::inet_stream_server tcpServer("0.0.0.0", "8000", LIBSOCKET_IPv4);
-	std::cout << hostname << " - TCP server listening :8000\n";
+	cout << hostname << " - TCP server listening :8000\n";
 
 	for (matrixCreator::LedValue& led : LedCon->Image.leds) {
 		led.red = 0; led.green = 0; led.blue = 8;
@@ -88,10 +92,8 @@ int main() {
 			}
 			LedCon->updateLed();
 
-			std::cout << exc.mesg << std::endl;
+			cout << exc.mesg << endl;
 		}
-				
-		networkConnected = true;
 
 		//connected
 		for (matrixCreator::LedValue& led : LedCon->Image.leds) {
@@ -106,11 +108,24 @@ int main() {
 		tcpConnection->rcv(&command, 1, MSG_WAITALL);
 
 		switch (command) {
-		case 'N':pthread_create(&recorderThread, NULL, recorder, NULL); break;
-		case 'L':pthread_create(&recorderThread, NULL, recorder, NULL); break;
-		case 'T': LedCon->turnOffLed(); system("sudo shutdown now"); break;
-		//case 'R':
-		default: std::cout << "unrecognized command" << std::endl;
+		case 'N': {//record to network
+			*status = 'N';
+			recording = true;
+			pthread_create(&recorderThread, NULL, recorder, NULL);
+			break;
+		}
+		case 'L': {
+			*status = 'L';
+			recording = true;
+			pthread_create(&recorderThread, NULL, recorder, NULL);
+			break;
+		}
+		case 'T': {
+			LedCon->turnOffLed(); system("sudo shutdown now");
+			break;
+		}
+		case 'D':
+		default: cout << "unrecognized command" << endl;
 		}
 		command = '\0';
 		LedCon->turnOffLed();
@@ -135,15 +150,15 @@ void *udpBroadcastReceiver(void *null) {
 	
 	//start server
 	libsocket::inet_dgram_server udpServer("0.0.0.0", "8001", LIBSOCKET_IPv4);	
-	std::cout << hostname << " - UDP server listening :8001\n";
+	cout << hostname << " - UDP server listening :8001\n";
 
 	while (true) {
 		try {
 			udpServer.rcvfrom(buffer, remoteIP, remotePort);
-
-			if (buffer.compare("Remote") == 0) {
-				std::cout << "Remote PC at " << remoteIP << ":" << remotePort << std::endl;
-				udpServer.sndto("PiMatrix", remoteIP, remotePort);
+			
+			if (buffer.compare("live long and prosper") == 0) {
+				cout << "Remote PC at " << remoteIP << ":" << remotePort << endl;
+				udpServer.sndto("peace and long life", remoteIP, remotePort);
 			}
 			
 		}
@@ -155,7 +170,7 @@ void *udpBroadcastReceiver(void *null) {
 			}
 			LedCon->updateLed();
 
-			std::cout << exc.mesg << std::endl;
+			cout << exc.mesg << endl;
 		}
 	}
 	
@@ -170,7 +185,7 @@ void *recorder(void* null) {
 	pthread_create(&networkStreamingThread, NULL, record2Remote, NULL);
 
 
-	while (networkConnected) {
+	while (recording) {
 		uint32_t step = 0;
 		while (step < BUFFER_SAMPLES_PER_CHANNEL) {
 
@@ -188,16 +203,50 @@ void *recorder(void* null) {
 		}
 		pthread_mutex_lock(&bufferMutex[(buffer_switch + 1) % 2]);
 		pthread_mutex_unlock(&bufferMutex[buffer_switch]);
-		//std::cout << "Buffer " << buffer_switch << " Recorded" << std::endl;
+		//cout << "Buffer " << buffer_switch << " Recorded" << endl;
 		buffer_switch = (buffer_switch + 1) % 2;
 	}
 
 	//end of the program, signal the user that recording have been completed
-	std::cout << "------ Recording ended ------" << std::endl;
+	cout << "------ Recording ended ------" << endl;
 }
 
 void *record2Disk(void* null) {
+	time_t t = time(NULL);
+	struct tm tm = *localtime(&t);
 
+	ostringstream filenameStream;
+	filenameStream << "pi_matrix_" << tm.tm_year + 1900 << tm.tm_mon + 1 << tm.tm_mday << "_" 
+		<< tm.tm_hour << tm.tm_min << tm.tm_sec << "_8channel_recording.wav";
+	string filename = filenameStream.str();
+	ofstream file(filename, std::ofstream::binary);
+
+	// WAVE file header format
+	struct WaveHeader {
+		unsigned char riff[4];						// RIFF string
+		unsigned int overall_size;				// overall size of file in bytes
+		unsigned char wave[4];						// WAVE string
+		unsigned char fmt_chunk_marker[4];			// fmt string with trailing null char
+		unsigned int length_of_fmt;					// length of the format data
+		unsigned int format_type;					// format type. 1-PCM, 3- IEEE float, 6 - 8bit A law, 7 - 8bit mu law
+		unsigned int channels;						// no.of channels
+		unsigned int sample_rate;					// sampling rate (blocks per second)
+		unsigned int byterate;						// SampleRate * NumChannels * BitsPerSample/8
+		unsigned int block_align;					// NumChannels * BitsPerSample/8
+		unsigned int bits_per_sample;				// bits per sample, 8- 8bits, 16- 16 bits etc
+		unsigned char data_chunk_header[4];		// DATA string or FLLR string
+		unsigned int data_size;						// NumSamples * NumChannels * BitsPerSample/8 - size of the next chunk that will be read
+	};
+
+	uint32_t bufferSwitch = 0;
+	while (true) {
+		pthread_mutex_lock(&bufferMutex[bufferSwitch]);
+
+		file.write((const char*)buffer[bufferSwitch], STREAMING_CHANNELS * BUFFER_SAMPLES_PER_CHANNEL * 2);
+
+		pthread_mutex_unlock(&bufferMutex[bufferSwitch]);
+		bufferSwitch = (bufferSwitch + 1) % 2;
+	}
 }
 
 
@@ -209,19 +258,18 @@ void *record2Remote(void* null)
 
 		try {
 			tcpConnection->snd(buffer[bufferSwitch], STREAMING_CHANNELS * BUFFER_SAMPLES_PER_CHANNEL * 2);
-			//std::cout << "sending" << std::endl;
+			//cout << "sending" << endl;
 		}
 		catch (const libsocket::socket_exception& exc)
 		{
 			//assume network disconnection means recording completed
-			networkConnected = false; //set flag
+			recording = false; //set flag
 			pthread_mutex_unlock(&bufferMutex[bufferSwitch]);//unlock mutex
-			std::cout << "Network Disconnected" << std::endl;
 			pthread_exit(NULL);//terminate itself
 		}
 
 		pthread_mutex_unlock(&bufferMutex[bufferSwitch]);
-		//std::cout << "Buffer " << bufferSwitch << " Sent" << std::endl;
+		//cout << "Buffer " << bufferSwitch << " Sent" << endl;
 		bufferSwitch = (bufferSwitch + 1) % 2;
 	}
 }

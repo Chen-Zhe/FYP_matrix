@@ -7,6 +7,7 @@ class RecordStream(threading.Thread):
         threading.Thread.__init__(self)
         self.seconds_recorded = 0
         self.continue_recording = False
+        self.minutes_recorded = 0
 
     def run(self):
         out_sound = wave.open('test.wav', 'wb')
@@ -14,7 +15,7 @@ class RecordStream(threading.Thread):
         out_sound.setparams((8, 2, 16000, 0, 'NONE', 'not compressed'))
 
         connection = socket.socket()
-        connection.connect(("192.168.1.100", 8000))
+        connection.connect(("192.168.0.101", 8000))
 
         print "connection established, recording..."
 
@@ -29,7 +30,10 @@ class RecordStream(threading.Thread):
 
             if bytes_received>=expected_bytes:
                 self.seconds_recorded +=1
-                print self.seconds_recorded, "seconds recorded\r",
+                if self.seconds_recorded == 60:
+                    minutes_recorded +=1
+                    seconds_recorded =0
+                print self.minutes_recorded, "minutes", self.seconds_recorded, "seconds recorded\r",
                 if self.continue_recording:
                     bytes_received = bytes_received-expected_bytes                    
                 else:

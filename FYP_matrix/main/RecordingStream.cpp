@@ -62,7 +62,7 @@ int main() {
 		libsocket::inet_stream_server tcpServer("0.0.0.0", "8000", LIBSOCKET_IPv4);
 
 		//stand by
-		std::cout << hostname << " - TCP server listening" << std::endl;
+		std::cout << hostname << " - TCP server listening :8000\n";
 		for (matrixCreator::LedValue& led : LedCon->Image.leds) {
 			led.red = 0; led.green = 0; led.blue = 8;
 		}
@@ -114,14 +114,24 @@ int main() {
 }
 
 void *broadcastReceiver(void *null) {
+	string from1;
+	string from2;
 
+	from1.resize(64);
+	from2.resize(64);
+	string buf;
+
+	buf.resize(32);
 	while (true) {
 		try {
 			libsocket::inet_dgram_server udpServer("0.0.0.0", "8001", LIBSOCKET_IPv4);
 
 			//stand by
-			std::cout << hostname << " - UDP server listening" << std::endl;
+			std::cout << hostname << " - UDP server listening :8001\n";
 
+			udpServer.rcvfrom(buf, from1, from2);
+
+			std::cout << "Answer from " << from1 << ":" << from2 << " - " << buf << " - " << buf.size() << std::endl;
 		}
 		catch (const libsocket::socket_exception& exc)
 		{
@@ -132,7 +142,6 @@ void *broadcastReceiver(void *null) {
 			LedCon->updateLed();
 
 			std::cout << exc.mesg << std::endl;
-			return 0;
 		}
 	}
 	

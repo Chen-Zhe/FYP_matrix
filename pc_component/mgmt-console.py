@@ -14,7 +14,7 @@ def printMenu():
         print "2. Connected devices' detail"
         print "----------------------------"
         print "3. Record over network"
-        print "4. Reocrd to disk"
+        print "4. Record to disk"
         print "5. Use device as LVCSR"
         print "----------------------"
         print "9. Disconnect from all devices"
@@ -41,11 +41,8 @@ while(True):
         pass
 
     elif choice == 9:
-        if raw_input("Disconnect from all devices? (y/n)") == "y":
-            deviceMan.disconnectAll()
-            break
-        else:
-            print "Abort"
+        deviceMan.disconnectAll()
+        #break
     
     elif choice == 0:
         if raw_input("Shutdown all devices? (y/n)") == "y":

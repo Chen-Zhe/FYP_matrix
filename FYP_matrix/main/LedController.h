@@ -18,14 +18,21 @@ public:
 	~LedController() {};
 
 	bool updateLed() {
+		ledOff = false;
 		return Driver.Write(&Image);
 	};
 
 	bool turnOffLed() {
-		return Driver.Write(&LedOff);
+		if (!ledOff) {
+			ledOff = true;
+			return Driver.Write(&LedOff);
+		}			
+		else
+			return true;
 	}
 
 private:
 	matrixCreator::Everloop Driver;
 	matrixCreator::EverloopImage LedOff;
+	bool ledOff = true;
 };

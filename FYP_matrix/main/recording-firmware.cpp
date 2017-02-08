@@ -22,6 +22,9 @@
 
 #include "LedController.h"
 
+namespace matrixCreator = matrix_hal;
+using namespace std;
+
 #define BUFFER_SAMPLES_PER_CHANNEL	16384 //around 1 second, power of 2 for networking, trucation at PC side
 #define HOST_NAME_LENGTH			20 //maximum number of characters for host name
 #define COMMAND_LENGTH				1
@@ -32,10 +35,6 @@ void *record2Disk(void* null);
 void *udpBroadcastReceiver(void *null);
 
 void * recorder(void * null);
-
-namespace matrixCreator = matrix_hal;
-
-using namespace std;
 
 LedController *LedCon;
 matrixCreator::MicrophoneArray microphoneArray;
@@ -105,36 +104,38 @@ int main() {
 
 		pthread_t recorderThread;
 
-		tcpConnection->rcv(&command, 1, MSG_WAITALL);
-
-		switch (command) {
-		case 'N': {//record to network
-			*status = 'N';
-			recording = true;
-			pthread_create(&recorderThread, NULL, recorder, NULL);
-			break;
-		}
-		case 'L': {
-			if (*status == 'I') {
-				*status = 'L';
+		while (tcpConnection->rcv(&command, 1, MSG_WAITALL)) {
+			switch (command) {
+			case 'N': {//record to network
+				*status = 'N';
 				recording = true;
 				pthread_create(&recorderThread, NULL, recorder, NULL);
+				break;
 			}
-			else if (*status == 'L') {
-				*status = 'I';
-				recording = false;
+			case 'L': {
+				if (*status == 'I') {
+					*status = 'L';
+					recording = true;
+					pthread_create(&recorderThread, NULL, recorder, NULL);
+				}
+				else if (*status == 'L') {
+					*status = 'I';
+					recording = false;
+				}
+
+				break;
 			}
-			
-			break;
+			case 'T': {
+				LedCon->turnOffLed(); system("sudo shutdown now");
+				break;
+			}
+			default: cout << "unrecognized command" << endl;
+			}
+			command = '\0';
+			LedCon->turnOffLed();
 		}
-		case 'T': {
-			LedCon->turnOffLed(); system("sudo shutdown now");
-			break;
-		}
-		case 'D':
-		default: cout << "unrecognized command" << endl;
-		}
-		command = '\0';
+		cout << "Remote PC at " << tcpConnection->gethost() << ":" << tcpConnection->getport() << " disconnected" << endl;
+		tcpConnection->destroy();
 		LedCon->turnOffLed();
 	}
 	//pthread_join(recorderThread, NULL);
@@ -164,7 +165,7 @@ void *udpBroadcastReceiver(void *null) {
 			udpServer.rcvfrom(buffer, remoteIP, remotePort);
 			
 			if (buffer.compare("live long and prosper") == 0) {
-				cout << "Remote PC at " << remoteIP << ":" << remotePort << endl;
+				cout << "Remote PC at " << remoteIP << endl;
 				udpServer.sndto("peace and long life", remoteIP, remotePort);
 			}
 			
@@ -184,6 +185,7 @@ void *udpBroadcastReceiver(void *null) {
 }
 
 void *recorder(void* null) {
+	cout << "------ Recording starting ------" << endl;
 	uint32_t buffer_switch = 0;
 	//lock down buffer 0 before spawning streaming thread
 	pthread_mutex_lock(&bufferMutex[buffer_switch]);
@@ -198,9 +200,7 @@ void *recorder(void* null) {
 		uint32_t step = 0;
 		while (step < BUFFER_SAMPLES_PER_CHANNEL) {
 
-			/* Reading 8-mics buffer from the FPGA
-			The reading process is a blocking process that read in 8*128 samples every 8ms
-			*/
+			/* The reading process is a blocking process that read in 8*128 samples every 8ms */
 			microphoneArray.Read();
 
 			for (uint16_t s = 0; s < microphoneArray.NumberOfSamples(); s++) {
@@ -212,7 +212,6 @@ void *recorder(void* null) {
 		}
 		pthread_mutex_lock(&bufferMutex[(buffer_switch + 1) % 2]);
 		pthread_mutex_unlock(&bufferMutex[buffer_switch]);
-		//cout << "Buffer " << buffer_switch << " Recorded" << endl;
 		buffer_switch = (buffer_switch + 1) % 2;
 	}
 
@@ -224,10 +223,14 @@ void *record2Disk(void* null) {
 	time_t t = time(NULL);
 	struct tm tm = *localtime(&t);
 
+	char dateAndTime[16];
+	sprintf(dateAndTime, "%d%02d%02d_%02d%02d%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, 
+		tm.tm_hour, tm.tm_min, tm.tm_sec);
+
 	ostringstream filenameStream;
-	filenameStream << "pi_matrix_" << tm.tm_year + 1900 << tm.tm_mon + 1 << tm.tm_mday << "_" 
-		<< tm.tm_hour << tm.tm_min << tm.tm_sec << "_8channel_recording.wav";
+	filenameStream << "/home/pi/Recordings/pi_matrix_" << dateAndTime << "_8channel_recording.wav";
 	string filename = filenameStream.str();
+
 	ofstream file(filename, std::ofstream::binary);
 
 	// WAVE file header format
@@ -254,7 +257,7 @@ void *record2Disk(void* null) {
 	file.write((const char*)&header, sizeof(WaveHeader));
 	uint32_t counter = 0;
 	uint32_t bufferSwitch = 0;
-	while (true) {
+	while (recording) {
 		pthread_mutex_lock(&bufferMutex[bufferSwitch]);
 
 		file.write((const char*)buffer[bufferSwitch], STREAMING_CHANNELS * BUFFER_SAMPLES_PER_CHANNEL * 2);

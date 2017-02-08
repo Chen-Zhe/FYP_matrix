@@ -62,6 +62,7 @@ class deviceManager():
         for pimatrix in self.deviceList:
             try:
                 pimatrix.tcpConnection.send(commandKeyword[command])
+                pimatrix.status = commandKeyword[command]
             except:
                 print "{0}({1}) timed out!".format(pimatrix.hostname,pimatrix.ip)
                 self.deviceList.remove(pimatrix)
@@ -69,7 +70,6 @@ class deviceManager():
     
     def disconnectAll(self):
         for pimatrix in self.deviceList:
-            pimatrix.tcpConnection.send("D")
             pimatrix.tcpConnection.close()
         self.deviceList = []
         self.numDevices = 0

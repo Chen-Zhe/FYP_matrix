@@ -1,6 +1,7 @@
 import wave
 import threading
 import pimatrix
+import time
 
 class RecordingStream(threading.Thread):
     def __init__(self):
@@ -10,7 +11,8 @@ class RecordingStream(threading.Thread):
         self.device = device
 
     def run(self):
-        out_sound = wave.open('test.wav', 'wb')
+        filename = device.hostname+"_"+time.strftime("%Y%m%d_%H%M%S", time.localtime())+"_8ch.wav"
+        out_sound = wave.open(filename, 'wb')
         # (num of channels, sampling width in bytes, sampling rate, num of frames, compression type, compression name)
         out_sound.setparams((8, 2, 16000, 0, 'NONE', 'not compressed'))
 

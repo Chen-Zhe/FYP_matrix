@@ -227,7 +227,7 @@ void *record2Disk(void* null) {
 		tm.tm_hour, tm.tm_min, tm.tm_sec);
 
 	ostringstream filenameStream;
-	filenameStream << "/home/pi/Recordings/pi_matrix_" << dateAndTime << "_8channel_recording.wav";
+	filenameStream << "/home/pi/Recordings/" << hostname << "_" << dateAndTime << "_8ch.wav";
 	string filename = filenameStream.str();
 
 	ofstream file(filename, std::ofstream::binary);

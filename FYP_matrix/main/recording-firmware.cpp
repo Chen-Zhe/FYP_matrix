@@ -214,8 +214,7 @@ void *recorder(void* null) {
 		pthread_mutex_unlock(&bufferMutex[buffer_switch]);
 		buffer_switch = (buffer_switch + 1) % 2;
 	}
-
-	//end of the program, signal the user that recording have been completed
+	pthread_mutex_unlock(&bufferMutex[buffer_switch]);
 	cout << "------ Recording ended ------" << endl;
 }
 
@@ -254,6 +253,7 @@ void *record2Disk(void* null) {
 		char data[4] = { 'd', 'a', 't', 'a' };		// DATA string or FLLR string
 		uint32_t dataSize;							// NumSamples * NumChannels * BitsPerSample/8 - size of the next chunk that will be read
 	} header;
+
 	file.write((const char*)&header, sizeof(WaveHeader));
 	uint32_t counter = 0;
 	uint32_t bufferSwitch = 0;
@@ -272,7 +272,6 @@ void *record2Disk(void* null) {
 	file.write((const char*)&header, sizeof(WaveHeader));
 	file.close();
 }
-
 
 void *record2Remote(void* null)
 {

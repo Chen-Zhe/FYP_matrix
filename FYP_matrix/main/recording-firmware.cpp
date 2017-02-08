@@ -223,19 +223,24 @@ void *record2Disk(void* null) {
 
 	// WAVE file header format
 	struct WaveHeader {
-		unsigned char riff[4];						// RIFF string
-		unsigned int overall_size;				// overall size of file in bytes
-		unsigned char wave[4];						// WAVE string
-		unsigned char fmt_chunk_marker[4];			// fmt string with trailing null char
-		unsigned int length_of_fmt;					// length of the format data
-		unsigned int format_type;					// format type. 1-PCM, 3- IEEE float, 6 - 8bit A law, 7 - 8bit mu law
-		unsigned int channels;						// no.of channels
-		unsigned int sample_rate;					// sampling rate (blocks per second)
-		unsigned int byterate;						// SampleRate * NumChannels * BitsPerSample/8
-		unsigned int block_align;					// NumChannels * BitsPerSample/8
-		unsigned int bits_per_sample;				// bits per sample, 8- 8bits, 16- 16 bits etc
-		unsigned char data_chunk_header[4];		// DATA string or FLLR string
-		unsigned int data_size;						// NumSamples * NumChannels * BitsPerSample/8 - size of the next chunk that will be read
+		//RIFF chunk
+		char RIFF[4] = { 'R', 'I', 'F', 'F' };
+		uint32_t overallSize;						// overall size of file in bytes
+		char WAVE[4] = { 'W', 'A', 'V', 'E' };		// WAVE string
+
+		//fmt subchunk
+		char FMT[4] = { 'f', 'm', 't', ' ' };		// fmt string with trailing null char
+		uint32_t fmtLength = 16;					// length of the format data
+		uint16_t audioFormat = 1;					// format type. 1-PCM, 3- IEEE float, 6 - 8bit A law, 7 - 8bit mu law
+		uint16_t numChannels = 8;					// no.of channels
+		uint32_t samplingRate = 16000;				// sampling rate (blocks per second)
+		uint32_t byteRate = 256000;					// SampleRate * NumChannels * BitsPerSample/8
+		uint16_t blockAlign = 16;					// NumChannels * BitsPerSample/8
+		uint16_t bitsPerSample = 16;						// bits per sample, 8- 8bits, 16- 16 bits etc
+
+		//data subchunk
+		char dataChunkHeader[4] = { 'd', 'a', 't', 'a' };			// DATA string or FLLR string
+		uint32_t data_size;						// NumSamples * NumChannels * BitsPerSample/8 - size of the next chunk that will be read
 	};
 
 	uint32_t bufferSwitch = 0;

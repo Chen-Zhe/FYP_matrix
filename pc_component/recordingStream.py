@@ -1,12 +1,13 @@
 import wave
 import threading
+import pimatrix
 
 class RecordingStream(threading.Thread):
     def __init__(self):
-        threading.Thread.__init__(self, connection)
+        threading.Thread.__init__(self, device)
         self.seconds_recorded = 0
         self.continue_recording = False
-        self.connection = socket
+        self.device = device
 
     def run(self):
         out_sound = wave.open('test.wav', 'wb')

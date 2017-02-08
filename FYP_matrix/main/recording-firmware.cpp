@@ -115,9 +115,16 @@ int main() {
 			break;
 		}
 		case 'L': {
-			*status = 'L';
-			recording = true;
-			pthread_create(&recorderThread, NULL, recorder, NULL);
+			if (*status == 'I') {
+				*status = 'L';
+				recording = true;
+				pthread_create(&recorderThread, NULL, recorder, NULL);
+			}
+			else if (*status == 'L') {
+				*status = 'I';
+				recording = false;
+			}
+			
 			break;
 		}
 		case 'T': {
@@ -181,9 +188,11 @@ void *recorder(void* null) {
 	//lock down buffer 0 before spawning streaming thread
 	pthread_mutex_lock(&bufferMutex[buffer_switch]);
 
-	pthread_t networkStreamingThread;//spawn networking thread and pass the connection
-	pthread_create(&networkStreamingThread, NULL, record2Remote, NULL);
-
+	pthread_t workerThread;
+	switch (*status) {
+	case 'N':pthread_create(&workerThread, NULL, record2Remote, NULL); break;
+	case 'L':pthread_create(&workerThread, NULL, record2Disk, NULL); break;
+	}
 
 	while (recording) {
 		uint32_t step = 0;
@@ -229,29 +238,36 @@ void *record2Disk(void* null) {
 		char WAVE[4] = { 'W', 'A', 'V', 'E' };		// WAVE string
 
 		//fmt subchunk
-		char FMT[4] = { 'f', 'm', 't', ' ' };		// fmt string with trailing null char
+		char fmt[4] = { 'f', 'm', 't', ' ' };		// fmt string with trailing null char
 		uint32_t fmtLength = 16;					// length of the format data
 		uint16_t audioFormat = 1;					// format type. 1-PCM, 3- IEEE float, 6 - 8bit A law, 7 - 8bit mu law
 		uint16_t numChannels = 8;					// no.of channels
 		uint32_t samplingRate = 16000;				// sampling rate (blocks per second)
 		uint32_t byteRate = 256000;					// SampleRate * NumChannels * BitsPerSample/8
 		uint16_t blockAlign = 16;					// NumChannels * BitsPerSample/8
-		uint16_t bitsPerSample = 16;						// bits per sample, 8- 8bits, 16- 16 bits etc
+		uint16_t bitsPerSample = 16;				// bits per sample, 8- 8bits, 16- 16 bits etc
 
 		//data subchunk
-		char dataChunkHeader[4] = { 'd', 'a', 't', 'a' };			// DATA string or FLLR string
-		uint32_t data_size;						// NumSamples * NumChannels * BitsPerSample/8 - size of the next chunk that will be read
-	};
-
+		char data[4] = { 'd', 'a', 't', 'a' };		// DATA string or FLLR string
+		uint32_t dataSize;							// NumSamples * NumChannels * BitsPerSample/8 - size of the next chunk that will be read
+	} header;
+	file.write((const char*)&header, sizeof(WaveHeader));
+	uint32_t counter = 0;
 	uint32_t bufferSwitch = 0;
 	while (true) {
 		pthread_mutex_lock(&bufferMutex[bufferSwitch]);
 
 		file.write((const char*)buffer[bufferSwitch], STREAMING_CHANNELS * BUFFER_SAMPLES_PER_CHANNEL * 2);
+		counter++;
 
 		pthread_mutex_unlock(&bufferMutex[bufferSwitch]);
 		bufferSwitch = (bufferSwitch + 1) % 2;
 	}
+	header.dataSize = STREAMING_CHANNELS * BUFFER_SAMPLES_PER_CHANNEL * 2 * counter;
+	header.overallSize = header.dataSize + 36;
+	file.seekp(0);
+	file.write((const char*)&header, sizeof(WaveHeader));
+	file.close();
 }
 
 

@@ -2,6 +2,7 @@ import threading
 import recordingStream
 import pimatrix
 import time
+from ntpserver import ntpServer
 
 deviceMan = pimatrix.deviceManager()
 
@@ -20,6 +21,8 @@ def printMenu():
         print "----------------------"
         print "9. Disconnect from all devices"
         print "0. Shutdown all devices"
+
+ntp = ntpServer()
 
 while(True):
     printMenu()
@@ -62,5 +65,6 @@ while(True):
     else:
         print "Not a valid choice"
 
+ntp.stop()
 print "Thank you for using Pi-Matrix Management Console"
 print "Have a nice day!"

@@ -28,6 +28,7 @@
     <Compile Include="mgmt-console.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="ntpserver.py" />
     <Compile Include="pc-transcript.py" />
     <Compile Include="pc-recorder.py" />
     <Compile Include="pimatrix.py">

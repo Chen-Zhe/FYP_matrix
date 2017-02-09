@@ -7,9 +7,6 @@ import mutex
 import threading
 import select
 
-taskQueue = Queue.Queue()
-stopFlag = False
-
 def system_to_ntp_time(timestamp):
     """Convert a system time to a NTP time.
 
@@ -237,38 +234,36 @@ class NTPPacket:
         
 
 class RecvThread(threading.Thread):
-    def __init__(self,socket):
+    def __init__(self, socket, queue):
         threading.Thread.__init__(self)
         self.socket = socket
+        self.taskQueue = queue
+        self.work = True
+
     def run(self):
-        global taskQueue,stopFlag
-        while True:
-            if stopFlag == True:
-                print "RecvThread Ended"
-                break
+        while self.work:
             rlist,wlist,elist = select.select([self.socket],[],[],1);
             if len(rlist) != 0:
-                print "Received %d packets" % len(rlist)
+                #print "Received %d packets" % len(rlist)
                 for tempSocket in rlist:
                     try:
                         data,addr = tempSocket.recvfrom(1024)
                         recvTimestamp = recvTimestamp = system_to_ntp_time(time.time())
-                        taskQueue.put((data,addr,recvTimestamp))
+                        self.taskQueue.put((data,addr,recvTimestamp))
                     except socket.error,msg:
                         print msg;
 
 class WorkThread(threading.Thread):
-    def __init__(self,socket):
+    def __init__(self,socket, queue):
         threading.Thread.__init__(self)
         self.socket = socket
+        self.taskQueue = queue
+        self.work = True
+
     def run(self):
-        global taskQueue,stopFlag
-        while True:
-            if stopFlag == True:
-                print "WorkThread Ended"
-                break
+        while self.work:
             try:
-                data,addr,recvTimestamp = taskQueue.get(timeout=1)
+                data,addr,recvTimestamp = self.taskQueue.get(timeout=1)
                 recvPacket = NTPPacket()
                 recvPacket.from_data(data)
                 timeStamp_high,timeStamp_low = recvPacket.GetTxTimeStamp()
@@ -285,26 +280,30 @@ class WorkThread(threading.Thread):
                 sendPacket.SetOriginTimeStamp(timeStamp_high,timeStamp_low)
                 sendPacket.recv_timestamp = recvTimestamp
                 sendPacket.tx_timestamp = system_to_ntp_time(time.time())
-                socket.sendto(sendPacket.to_data(),addr)
+                self.socket.sendto(sendPacket.to_data(),addr)
                 print "Sended to %s:%d" % (addr[0],addr[1])
             except Queue.Empty:
                 continue
-                
+  
+class ntpServer():
+    def  __init__(self):
+        self.soc = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+        self.soc.bind(("0.0.0.0",123))
+        self.taskQueue = Queue.Queue()
+
+        self.recvThread = RecvThread(self.soc, self.taskQueue)
+        self.workThread = WorkThread(self.soc, self.taskQueue)
         
-listenIp = "0.0.0.0"
-listenPort = 123
-socket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-socket.bind((listenIp,listenPort))
-print "local socket: ", socket.getsockname();
-recvThread = RecvThread(socket)
-recvThread.start()
-workThread = WorkThread(socket)
-workThread.start()
+        self.start()
 
-raw_input("Press Enter to stop NTP server\n")
-print "Exiting..."
-stopFlag = True
-recvThread.join()
-workThread.join()
-socket.close()
+    def start(self):
+        print "NTP server: ", self.soc.getsockname()
+        self.recvThread.start()
+        self.workThread.start()
 
+    def stop(self):
+        self.recvThread.work = False
+        self.workThread.work = False
+        self.recvThread.join()
+        self.workThread.join()
+        self.soc.close()

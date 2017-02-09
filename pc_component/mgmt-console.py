@@ -6,6 +6,8 @@ from ntpserver import ntpServer
 
 deviceMan = pimatrix.deviceManager()
 
+def syncTime():
+    pass
 
 def printMenu():
     print "\n"
@@ -37,11 +39,13 @@ while(True):
 
     elif choice == 3:
         currentDateAndTime = time.strftime("%Y%m%d_%H%M%S", time.localtime())
+
         streamerList = [recordingStream.RecordingStream(device, currentDateAndTime) for device in deviceMan.deviceList]
-        deviceMan.sendCommand("rec2net")
         for streamer in streamerList:
             streamer.start()
-        raw_input("Press Enter to stop recording...\n")
+        deviceMan.sendCommand("rec2net")
+                
+        raw_input("Press Enter to stop recording...")
         for streamer in streamerList:
             streamer.continue_recording = False
         break

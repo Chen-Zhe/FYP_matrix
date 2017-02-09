@@ -96,12 +96,11 @@ int main() {
 			while (tcpConnection->rcv(&command, 1, MSG_WAITALL)) {
 				switch (command) {
 				case 'N': {//record to network
-					*status = 'N';
 					recording = true;
 					pthread_create(&recorderThread, NULL, recorder, NULL);
 					break;
 				}
-				case 'L': {
+				case 'L': {//record to disk
 					if (*status == 'I') {
 						*status = 'L';
 						recording = true;

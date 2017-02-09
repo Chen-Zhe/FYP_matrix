@@ -96,6 +96,7 @@ int main() {
 			while (tcpConnection->rcv(&command, 1, MSG_WAITALL)) {
 				switch (command) {
 				case 'N': {//record to network
+					*status = 'N';
 					recording = true;
 					pthread_create(&recorderThread, NULL, recorder, NULL);
 					break;
@@ -283,6 +284,7 @@ void *record2Remote(void* null)
 		{
 			//assume network disconnection means recording completed
 			recording = false; //set flag
+			*status = 'I';
 			pthread_mutex_unlock(&bufferMutex[bufferSwitch]);//unlock mutex
 			pthread_exit(NULL);//terminate itself
 		}

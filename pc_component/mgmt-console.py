@@ -1,6 +1,7 @@
 import threading
 import recordingStream
 import pimatrix
+import time
 
 deviceMan = pimatrix.deviceManager()
 
@@ -32,7 +33,14 @@ while(True):
         deviceMan.tabulateDevice()
 
     elif choice == 3:
+        currentDateAndTime = time.strftime("%Y%m%d_%H%M%S", time.localtime())
+        streamerList = [recordingStream.RecordingStream(device, currentDateAndTime) for device in deviceMan.deviceList]
         deviceMan.sendCommand("rec2net")
+        for streamer in streamerList:
+            streamer.start()
+        raw_input("Press Enter to stop recording...\n")
+        for streamer in streamerList:
+            streamer.continue_recording = False
 
     elif choice == 4:
         deviceMan.sendCommand("rec2sd")

@@ -5,13 +5,15 @@ import time
 
 class RecordingStream(threading.Thread):
     def __init__(self):
-        threading.Thread.__init__(self, device)
+        threading.Thread.__init__(self, device, dateAndTime)
         self.seconds_recorded = 0
-        self.continue_recording = False
+        self.continue_recording = True
         self.device = device
+        self.dateAndTime = dateAndTime
 
     def run(self):
-        filename = device.hostname+"_"+time.strftime("%Y%m%d_%H%M%S", time.localtime())+"_8ch.wav"
+        print device.hostname, "streaming starting"
+        filename = device.hostname+"_"+self.dateAndTime+"_8ch.wav"
         out_sound = wave.open(filename, 'wb')
         # (num of channels, sampling width in bytes, sampling rate, num of frames, compression type, compression name)
         out_sound.setparams((8, 2, 16000, 0, 'NONE', 'not compressed'))
@@ -20,7 +22,7 @@ class RecordingStream(threading.Thread):
         bytes_received = 0
 
         while bytes_received<expected_bytes:
-            file_buffer = self.connection.recv(4096) # it will not always receive the specified bytes
+            file_buffer = self.device.connection.recv(4096) # it will not always receive the specified bytes
 
             file_buffer_length = len(file_buffer)
             bytes_received += file_buffer_length
@@ -37,4 +39,4 @@ class RecordingStream(threading.Thread):
 
         out_sound.close()
 
-        print str(self.seconds_recorded) + " second audio file saved"
+        print device.hostname, "recorded", str(self.seconds_recorded), "seconds audio"

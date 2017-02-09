@@ -27,7 +27,7 @@ while(True):
     if choice == 1:
         print "Scanning......"
         deviceMan.discoverDevices()
-        deviceMan.tabulateDevice()
+        deviceMan.tabulateDevice()        
     
     elif choice == 2:
         deviceMan.tabulateDevice()
@@ -41,6 +41,7 @@ while(True):
         raw_input("Press Enter to stop recording...\n")
         for streamer in streamerList:
             streamer.continue_recording = False
+        break
 
     elif choice == 4:
         deviceMan.sendCommand("rec2sd")

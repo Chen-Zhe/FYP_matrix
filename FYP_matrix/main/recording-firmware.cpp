@@ -41,7 +41,7 @@ matrixCreator::MicrophoneArray microphoneArray;
 
 char sysInfo[COMMAND_LENGTH + HOST_NAME_LENGTH];
 
-bool recordToRemote = false;
+bool pcConnected = false;
 bool recording = false;
 //double buffer of SAMPLES_PER_CHANNEL*8 samples each
 int16_t buffer[2][BUFFER_SAMPLES_PER_CHANNEL][STREAMING_CHANNELS];
@@ -80,63 +80,60 @@ int main() {
 	while(true){
 		try {
 
-		tcpConnection = tcpServer.accept2();	
-		
+			tcpConnection = tcpServer.accept2();
+
+			//connected
+			for (matrixCreator::LedValue& led : LedCon->Image.leds) {
+				led.red = 0; led.green = 8; led.blue = 0;
+			}
+			LedCon->updateLed();
+			pcConnected = true;
+
+			tcpConnection->snd(sysInfo, COMMAND_LENGTH + HOST_NAME_LENGTH);
+
+			pthread_t recorderThread;
+
+			while (tcpConnection->rcv(&command, 1, MSG_WAITALL)) {
+				switch (command) {
+				case 'N': {//record to network
+					*status = 'N';
+					recording = true;
+					pthread_create(&recorderThread, NULL, recorder, NULL);
+					break;
+				}
+				case 'L': {
+					if (*status == 'I') {
+						*status = 'L';
+						recording = true;
+						pthread_create(&recorderThread, NULL, recorder, NULL);
+					}
+					else if (*status == 'L') {
+						*status = 'I';
+						recording = false;
+					}
+
+					break;
+				}
+				case 'T': {
+					LedCon->turnOffLed(); system("sudo shutdown now");
+					break;
+				}
+				default: cout << "unrecognized command" << endl;
+				}
+				command = '\0';
+				LedCon->turnOffLed();
+			}
 		}
+	
 		catch (const libsocket::socket_exception& exc)
 		{
 			//error
-			for (matrixCreator::LedValue& led : LedCon->Image.leds) {
-				led.red = 8; led.green = 0; led.blue = 0;
-			}
-			LedCon->updateLed();
-
 			cout << exc.mesg << endl;
 		}
-
-		//connected
-		for (matrixCreator::LedValue& led : LedCon->Image.leds) {
-			led.red = 0; led.green = 8; led.blue = 0;
-		}
-		LedCon->updateLed();
-
-		tcpConnection->snd(sysInfo, COMMAND_LENGTH + HOST_NAME_LENGTH);
-
-		pthread_t recorderThread;
-
-		while (tcpConnection->rcv(&command, 1, MSG_WAITALL)) {
-			switch (command) {
-			case 'N': {//record to network
-				*status = 'N';
-				recording = true;
-				pthread_create(&recorderThread, NULL, recorder, NULL);
-				break;
-			}
-			case 'L': {
-				if (*status == 'I') {
-					*status = 'L';
-					recording = true;
-					pthread_create(&recorderThread, NULL, recorder, NULL);
-				}
-				else if (*status == 'L') {
-					*status = 'I';
-					recording = false;
-				}
-
-				break;
-			}
-			case 'T': {
-				LedCon->turnOffLed(); system("sudo shutdown now");
-				break;
-			}
-			default: cout << "unrecognized command" << endl;
-			}
-			command = '\0';
-			LedCon->turnOffLed();
-		}
+		pcConnected = false;
 		cout << "Remote PC at " << tcpConnection->gethost() << ":" << tcpConnection->getport() << " disconnected" << endl;
 		tcpConnection->destroy();
-		LedCon->turnOffLed();
+		LedCon->turnOffLed();		
 	}
 	//pthread_join(recorderThread, NULL);
 
@@ -164,7 +161,7 @@ void *udpBroadcastReceiver(void *null) {
 		try {
 			udpServer.rcvfrom(buffer, remoteIP, remotePort);
 			
-			if (buffer.compare("live long and prosper") == 0) {
+			if (!pcConnected && buffer.compare("live long and prosper") == 0) {
 				cout << "Remote PC at " << remoteIP << endl;
 				udpServer.sndto("peace and long life", remoteIP, remotePort);
 			}

@@ -13,6 +13,8 @@ class deviceManager():
         self.numDevices = 0
 
     def discoverDevices(self):
+        newDevices = []
+
         udpSocket=socket(AF_INET, SOCK_DGRAM)
         udpSocket.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
         udpSocket.sendto('live long and prosper',('255.255.255.255',8001))
@@ -22,18 +24,19 @@ class deviceManager():
                 udpSocket.settimeout(1)
                 data, (ip, port) = udpSocket.recvfrom(32)
                 if str(data) == "peace and long life":
-                    self.deviceList.append(device(ip))
+                    newDevices.append(device(ip))
             except timeout:
                 break
     
-        for pimatrix in self.deviceList:
+        for pimatrix in newDevices:
             pimatrix.tcpConnection.connect((pimatrix.ip, 8000))
             data = pimatrix.tcpConnection.recv(21)
         
             pimatrix.hostname=str(data[1:]).rstrip(" \t\r\n\0")
             pimatrix.status=str(data[0])
         
-        self.numDevices = len(self.deviceList)
+        self.deviceList.extend(newDevices)
+        self.numDevices += len(newDevices)
 
     def tabulateDevice(self):
         if self.numDevices>0:
@@ -51,6 +54,8 @@ class deviceManager():
                 print pimatrix.hostname+"\t"+pimatrix.ip+"\t"+status
         else:
             print "No devices found"
+        
+        raw_input("Press Enter to continue...")
 
     def sendCommand(self, command):
         commandKeyword = {
@@ -62,7 +67,10 @@ class deviceManager():
         for pimatrix in self.deviceList:
             try:
                 pimatrix.tcpConnection.send(commandKeyword[command])
-                pimatrix.status = commandKeyword[command]
+                if pimatrix.status == commandKeyword[command]:
+                    pimatrix.status = "I"
+                else:
+                    pimatrix.status = commandKeyword[command]
             except:
                 print "{0}({1}) timed out!".format(pimatrix.hostname,pimatrix.ip)
                 self.deviceList.remove(pimatrix)

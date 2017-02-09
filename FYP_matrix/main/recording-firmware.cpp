@@ -8,6 +8,7 @@
 #include <sstream>
 #include <fstream>
 #include <sys/socket.h>
+#include <wiringPi.h>
 
 #include <libsocket/inetserverstream.hpp>
 #include <libsocket/inetserverdgram.hpp>
@@ -32,8 +33,8 @@ using namespace std;
 
 void *record2Remote(void* null);
 void *record2Disk(void* null);
+void * gestureDetector(void * null);
 void *udpBroadcastReceiver(void *null);
-
 void * recorder(void * null);
 
 LedController *LedCon;
@@ -66,6 +67,8 @@ int main() {
 
 	pthread_t udpThread;
 	pthread_create(&udpThread, NULL, udpBroadcastReceiver, NULL);
+	pthread_t ges;
+	pthread_create(&ges, NULL, gestureDetector, NULL);
 	
 	//stand by
 	libsocket::inet_stream_server tcpServer("0.0.0.0", "8000", LIBSOCKET_IPv4);
@@ -142,6 +145,31 @@ int main() {
 	LedCon->turnOffLed();
 
 	return 0;
+}
+
+void *gestureDetector(void *null) {
+	system("gpio edge 16 both");
+	pinMode(16, INPUT);
+	pinMode(13, OUTPUT);
+	pinMode(5, OUTPUT);
+
+	digitalWrite(13, HIGH);
+	digitalWrite(5, HIGH);
+	bool on = true;
+	int count = 0;
+	while (true) {
+		if (!digitalRead(16)) {
+			usleep(10);
+			if (!digitalRead(16)) {
+				cout << count++ << endl;
+				if (on) LedCon->turnOffLed();
+				else LedCon->updateLed();
+				on = !on;
+				
+			}
+		}
+		usleep(10000);
+	}
 }
 
 void *udpBroadcastReceiver(void *null) {

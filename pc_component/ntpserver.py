@@ -288,7 +288,7 @@ class WorkThread(threading.Thread):
 class ntpServer():
     def  __init__(self):
         self.soc = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-        self.soc.bind(("0.0.0.0",123))
+        self.soc.bind(("0.0.0.0",1230))
         self.taskQueue = Queue.Queue()
 
         self.recvThread = RecvThread(self.soc, self.taskQueue)

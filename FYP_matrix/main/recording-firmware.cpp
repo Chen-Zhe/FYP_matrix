@@ -56,7 +56,7 @@ unique_ptr<libsocket::inet_stream> tcpConnection;
 char* status = &sysInfo[0];
 char* hostname = &sysInfo[1];
 
-int main() {
+int main(int argc, char *argv[]) {
 	gethostname(hostname, HOST_NAME_LENGTH);
 	*status = 'I';
 	matrixCreator::WishboneBus bus;
@@ -70,15 +70,18 @@ int main() {
 	pthread_t udpThread;
 	pthread_create(&udpThread, NULL, udpBroadcastReceiver, NULL);
 
-	//setup swiping detection
-	system("gpio edge 16 both");
-	pinMode(16, INPUT);
-	pinMode(13, OUTPUT);
-	pinMode(5, OUTPUT);
+	if (argc == 1) {
+		//setup swiping detection
+		cout << "Motion sensor enabled" << endl;
+		system("gpio edge 16 both");
+		pinMode(16, INPUT);
+		pinMode(13, OUTPUT);
+		pinMode(5, OUTPUT);
 
-	digitalWrite(13, HIGH);
-	digitalWrite(5, HIGH);
-
+		digitalWrite(13, HIGH);
+		digitalWrite(5, HIGH);
+	}
+	
 	//setup pint 16 (IR) as interrupt
 	wiringPiISR(16, INT_EDGE_FALLING, &irInterrupt);
 
@@ -126,6 +129,7 @@ int main() {
 						*status = 'I';
 						recording = false;
 						pthread_join(recorderThread, NULL);
+						LedCon->updateLed();
 					}
 
 					break;
@@ -166,20 +170,21 @@ void irInterrupt() {
 
 	count++;
 	if (count > 30) {
-		LedCon->turnOffLed();
-		count = 0;
-
 		if (*status == 'I') {
+			LedCon->turnOffLed();
 			*status = 'L';
 			recording = true;
 			pthread_create(&recorderThread, NULL, recorder, NULL);
+			sleep(1);
 		}
-		else if (*status == 'L') {
+		else if (*status == 'L') {			
 			*status = 'I';
 			recording = false;
 			pthread_join(recorderThread, NULL);
+			LedCon->updateLed();
 		}
 
+		count = 0;
 	}		
 }
 
@@ -310,13 +315,13 @@ void *record2Disk(void* null) {
 
 			file.write((const char*)buffer[bufferSwitch], STREAMING_CHANNELS * BUFFER_SAMPLES_PER_CHANNEL * 2);
 			
+			pthread_mutex_unlock(&bufferMutex[bufferSwitch]);
+			bufferSwitch = (bufferSwitch + 1) % 2;
+
 			rotatingRing.leds[counter%matrixCreator::kMatrixCreatorNLeds].red = 0;
 			counter++;
 			rotatingRing.leds[counter%matrixCreator::kMatrixCreatorNLeds].red = 8;
 			LedCon->updateLed(rotatingRing);
-
-			pthread_mutex_unlock(&bufferMutex[bufferSwitch]);
-			bufferSwitch = (bufferSwitch + 1) % 2;
 		}
 
 		header.dataSize = STREAMING_CHANNELS * BUFFER_SAMPLES_PER_CHANNEL * 2 * counter;
@@ -342,15 +347,17 @@ void *record2Remote(void* null)
 		}
 		catch (const libsocket::socket_exception& exc)
 		{
-			//assume network disconnection means recording completed
-			recording = false; //set flag
-			*status = 'I';
-			pthread_mutex_unlock(&bufferMutex[bufferSwitch]);//unlock mutex
-			pthread_exit(NULL);//terminate itself
+			//network disconnection means recording completed
+			break;
 		}
 
 		pthread_mutex_unlock(&bufferMutex[bufferSwitch]);
 		//cout << "Buffer " << bufferSwitch << " Sent" << endl;
 		bufferSwitch = (bufferSwitch + 1) % 2;
 	}
+
+	recording = false; //set flag
+	*status = 'I';
+	pthread_mutex_unlock(&bufferMutex[bufferSwitch]);//unlock mutex
+	pthread_exit(NULL);//terminate itself
 }

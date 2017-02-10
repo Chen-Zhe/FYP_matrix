@@ -147,6 +147,21 @@ int main() {
 	return 0;
 }
 
+bool swipeDetected = false;
+
+void irInterrupt() {
+	static int count = 0;
+	
+	if (!swipeDetected) {
+		count++;
+		if (count > 30) {
+			swipeDetected = true;
+			LedCon->turnOffLed();
+			count = 0;
+		}		
+	}	
+}
+
 void *gestureDetector(void *null) {
 	system("gpio edge 16 both");
 	pinMode(16, INPUT);
@@ -155,22 +170,15 @@ void *gestureDetector(void *null) {
 
 	digitalWrite(13, HIGH);
 	digitalWrite(5, HIGH);
-	bool on = true;
-	int count = 0;
+	//setup pint 16 (IR) as interrupt
+	wiringPiISR(16, INT_EDGE_FALLING, &irInterrupt);
 	while (true) {
-		if (!digitalRead(16)) {
-			usleep(10);
-			if (!digitalRead(16)) {
-				cout << count++ << endl;
-				if (on) LedCon->turnOffLed();
-				else LedCon->updateLed();
-				on = !on;
-				
-			}
-		}
-		usleep(10000);
+
+		sleep(1);
 	}
 }
+
+
 
 void *udpBroadcastReceiver(void *null) {
 	string remoteIP;

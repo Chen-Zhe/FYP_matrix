@@ -9,6 +9,8 @@
 #include <fstream>
 #include <sys/socket.h>
 #include <wiringPi.h>
+#include <mqueue.h>
+#include <fcntl.h>
 
 #include <libsocket/inetserverstream.hpp>
 #include <libsocket/inetserverdgram.hpp>
@@ -30,6 +32,7 @@ using namespace std;
 #define HOST_NAME_LENGTH			20 //maximum number of characters for host name
 #define COMMAND_LENGTH				1
 #define STREAMING_CHANNELS			8 //Maxmium 8 channels
+#define IR_Q "/ir_q"
 
 void *record2Remote(void* null);
 void *record2Disk(void* null);
@@ -147,15 +150,14 @@ int main() {
 	return 0;
 }
 
-bool swipeDetected = false;
-
 void irInterrupt() {
 	static int count = 0;
+	static mqd_t swipeDetected = mq_open(IR_Q, O_WRONLY);
 	
 	if (!swipeDetected) {
 		count++;
 		if (count > 30) {
-			swipeDetected = true;
+			mq_send(swipeDetected, (char*)&count, 4, 0);
 			LedCon->turnOffLed();
 			count = 0;
 		}		
@@ -170,11 +172,32 @@ void *gestureDetector(void *null) {
 
 	digitalWrite(13, HIGH);
 	digitalWrite(5, HIGH);
+
+	struct mq_attr attr;
+	attr.mq_flags = 0;
+	attr.mq_maxmsg = 10;
+	attr.mq_msgsize = 4;
+	attr.mq_curmsgs = 0;
+	mqd_t swipeInterrupt = mq_open(IR_Q, O_CREAT | O_RDONLY, 0644, &attr);
+
+	int reply;
+	pthread_t recorderThread;
+
 	//setup pint 16 (IR) as interrupt
 	wiringPiISR(16, INT_EDGE_FALLING, &irInterrupt);
-	while (true) {
 
-		sleep(1);
+	while (true) {
+		mq_receive(swipeInterrupt, (char*)&reply, 4, NULL);
+
+		if (*status == 'I') {
+			*status = 'L';
+			recording = true;
+			pthread_create(&recorderThread, NULL, recorder, NULL);
+		}
+		else if (*status == 'L') {
+			*status = 'I';
+			recording = false;
+		}
 	}
 }
 

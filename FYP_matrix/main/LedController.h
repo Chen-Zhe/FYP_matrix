@@ -22,13 +22,18 @@ public:
 		return Driver.Write(&Image);
 	};
 
+	bool updateLed(matrixCreator::EverloopImage customImg) {
+		ledOff = false;
+		return Driver.Write(&customImg);
+	};
+
 	bool turnOffLed() {
 		if (!ledOff) {
 			ledOff = true;
 			return Driver.Write(&LedOff);
 		}			
 		else
-			return true;
+			return false;
 	}
 
 private:

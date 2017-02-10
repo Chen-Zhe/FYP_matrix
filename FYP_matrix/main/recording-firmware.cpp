@@ -19,7 +19,6 @@
 #include <libsocket/select.hpp>
 
 #include "../matrix-hal/cpp/driver/everloop_image.h"
-#include "../matrix-hal/cpp/driver/everloop.h"
 #include "../matrix-hal/cpp/driver/microphone_array.h"
 #include "../matrix-hal/cpp/driver/wishbone_bus.h"
 
@@ -36,7 +35,7 @@ using namespace std;
 
 void *record2Remote(void* null);
 void *record2Disk(void* null);
-void * gestureDetector(void * null);
+void irInterrupt();
 void *udpBroadcastReceiver(void *null);
 void * recorder(void * null);
 
@@ -70,9 +69,19 @@ int main() {
 
 	pthread_t udpThread;
 	pthread_create(&udpThread, NULL, udpBroadcastReceiver, NULL);
-	pthread_t ges;
-	pthread_create(&ges, NULL, gestureDetector, NULL);
-	
+
+	//setup swiping detection
+	system("gpio edge 16 both");
+	pinMode(16, INPUT);
+	pinMode(13, OUTPUT);
+	pinMode(5, OUTPUT);
+
+	digitalWrite(13, HIGH);
+	digitalWrite(5, HIGH);
+
+	//setup pint 16 (IR) as interrupt
+	wiringPiISR(16, INT_EDGE_FALLING, &irInterrupt);
+
 	//stand by
 	libsocket::inet_stream_server tcpServer("0.0.0.0", "8000", LIBSOCKET_IPv4);
 	cout << hostname << " - TCP server listening :8000\n";
@@ -116,6 +125,7 @@ int main() {
 					else if (*status == 'L') {
 						*status = 'I';
 						recording = false;
+						pthread_join(recorderThread, NULL);
 					}
 
 					break;
@@ -152,42 +162,12 @@ int main() {
 
 void irInterrupt() {
 	static int count = 0;
-	static mqd_t swipeDetected = mq_open(IR_Q, O_WRONLY);
-	
-	if (!swipeDetected) {
-		count++;
-		if (count > 30) {
-			mq_send(swipeDetected, (char*)&count, 4, 0);
-			LedCon->turnOffLed();
-			count = 0;
-		}		
-	}	
-}
+	static pthread_t recorderThread;
 
-void *gestureDetector(void *null) {
-	system("gpio edge 16 both");
-	pinMode(16, INPUT);
-	pinMode(13, OUTPUT);
-	pinMode(5, OUTPUT);
-
-	digitalWrite(13, HIGH);
-	digitalWrite(5, HIGH);
-
-	struct mq_attr attr;
-	attr.mq_flags = 0;
-	attr.mq_maxmsg = 10;
-	attr.mq_msgsize = 4;
-	attr.mq_curmsgs = 0;
-	mqd_t swipeInterrupt = mq_open(IR_Q, O_CREAT | O_RDONLY, 0644, &attr);
-
-	int reply;
-	pthread_t recorderThread;
-
-	//setup pint 16 (IR) as interrupt
-	wiringPiISR(16, INT_EDGE_FALLING, &irInterrupt);
-
-	while (true) {
-		mq_receive(swipeInterrupt, (char*)&reply, 4, NULL);
+	count++;
+	if (count > 30) {
+		LedCon->turnOffLed();
+		count = 0;
 
 		if (*status == 'I') {
 			*status = 'L';
@@ -197,11 +177,11 @@ void *gestureDetector(void *null) {
 		else if (*status == 'L') {
 			*status = 'I';
 			recording = false;
+			pthread_join(recorderThread, NULL);
 		}
-	}
+
+	}		
 }
-
-
 
 void *udpBroadcastReceiver(void *null) {
 	string remoteIP;
@@ -271,62 +251,79 @@ void *recorder(void* null) {
 		buffer_switch = (buffer_switch + 1) % 2;
 	}
 	pthread_mutex_unlock(&bufferMutex[buffer_switch]);
+	pthread_join(workerThread, NULL);
 	cout << "------ Recording ended ------" << endl;
+	pthread_exit(NULL);
 }
 
 void *record2Disk(void* null) {
-	time_t t = time(NULL);
-	struct tm tm = *localtime(&t);
-
-	char dateAndTime[16];
-	sprintf(dateAndTime, "%d%02d%02d_%02d%02d%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, 
-		tm.tm_hour, tm.tm_min, tm.tm_sec);
-
-	ostringstream filenameStream;
-	filenameStream << "/home/pi/Recordings/" << hostname << "_" << dateAndTime << "_8ch.wav";
-	string filename = filenameStream.str();
-
-	ofstream file(filename, std::ofstream::binary);
-
-	// WAVE file header format
-	struct WaveHeader {
-		//RIFF chunk
-		char RIFF[4] = { 'R', 'I', 'F', 'F' };
-		uint32_t overallSize;						// overall size of file in bytes
-		char WAVE[4] = { 'W', 'A', 'V', 'E' };		// WAVE string
-
-		//fmt subchunk
-		char fmt[4] = { 'f', 'm', 't', ' ' };		// fmt string with trailing null char
-		uint32_t fmtLength = 16;					// length of the format data
-		uint16_t audioFormat = 1;					// format type. 1-PCM, 3- IEEE float, 6 - 8bit A law, 7 - 8bit mu law
-		uint16_t numChannels = 8;					// no.of channels
-		uint32_t samplingRate = 16000;				// sampling rate (blocks per second)
-		uint32_t byteRate = 256000;					// SampleRate * NumChannels * BitsPerSample/8
-		uint16_t blockAlign = 16;					// NumChannels * BitsPerSample/8
-		uint16_t bitsPerSample = 16;				// bits per sample, 8- 8bits, 16- 16 bits etc
-
-		//data subchunk
-		char data[4] = { 'd', 'a', 't', 'a' };		// DATA string or FLLR string
-		uint32_t dataSize;							// NumSamples * NumChannels * BitsPerSample/8 - size of the next chunk that will be read
-	} header;
-
-	file.write((const char*)&header, sizeof(WaveHeader));
-	uint32_t counter = 0;
 	uint32_t bufferSwitch = 0;
-	while (recording) {
-		pthread_mutex_lock(&bufferMutex[bufferSwitch]);
+	char dateAndTime[16];
+	struct tm tm;
+	matrixCreator::EverloopImage rotatingRing;
 
-		file.write((const char*)buffer[bufferSwitch], STREAMING_CHANNELS * BUFFER_SAMPLES_PER_CHANNEL * 2);
-		counter++;
+	do {//fix the file size to less than 2GB maximum, create new file when recording continues
+		uint32_t counter = 0;
 
-		pthread_mutex_unlock(&bufferMutex[bufferSwitch]);
-		bufferSwitch = (bufferSwitch + 1) % 2;
-	}
-	header.dataSize = STREAMING_CHANNELS * BUFFER_SAMPLES_PER_CHANNEL * 2 * counter;
-	header.overallSize = header.dataSize + 36;
-	file.seekp(0);
-	file.write((const char*)&header, sizeof(WaveHeader));
-	file.close();
+		time_t t = time(NULL);
+		tm = *localtime(&t);
+				
+		sprintf(dateAndTime, "%d%02d%02d_%02d%02d%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+			tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+		ostringstream filenameStream;
+		filenameStream << "/home/pi/Recordings/" << hostname << "_" << dateAndTime << "_8ch.wav";
+		string filename = filenameStream.str();
+
+		ofstream file(filename, std::ofstream::binary);
+
+		// WAVE file header format
+		struct WaveHeader {
+			//RIFF chunk
+			char RIFF[4] = { 'R', 'I', 'F', 'F' };
+			uint32_t overallSize;						// overall size of file in bytes
+			char WAVE[4] = { 'W', 'A', 'V', 'E' };		// WAVE string
+
+														//fmt subchunk
+			char fmt[4] = { 'f', 'm', 't', ' ' };		// fmt string with trailing null char
+			uint32_t fmtLength = 16;					// length of the format data
+			uint16_t audioFormat = 1;					// format type. 1-PCM, 3- IEEE float, 6 - 8bit A law, 7 - 8bit mu law
+			uint16_t numChannels = 8;					// no.of channels
+			uint32_t samplingRate = 16000;				// sampling rate (blocks per second)
+			uint32_t byteRate = 256000;					// SampleRate * NumChannels * BitsPerSample/8
+			uint16_t blockAlign = 16;					// NumChannels * BitsPerSample/8
+			uint16_t bitsPerSample = 16;				// bits per sample, 8- 8bits, 16- 16 bits etc
+
+														//data subchunk
+			char data[4] = { 'd', 'a', 't', 'a' };		// DATA string or FLLR string
+			uint32_t dataSize;							// NumSamples * NumChannels * BitsPerSample/8 - size of the next chunk that will be read
+		} header;
+
+		file.write((const char*)&header, sizeof(WaveHeader));
+
+		while (recording && counter < 8191) {
+
+			pthread_mutex_lock(&bufferMutex[bufferSwitch]);
+
+			file.write((const char*)buffer[bufferSwitch], STREAMING_CHANNELS * BUFFER_SAMPLES_PER_CHANNEL * 2);
+			
+			rotatingRing.leds[counter%matrixCreator::kMatrixCreatorNLeds].red = 0;
+			counter++;
+			rotatingRing.leds[counter%matrixCreator::kMatrixCreatorNLeds].red = 8;
+
+			pthread_mutex_unlock(&bufferMutex[bufferSwitch]);
+			bufferSwitch = (bufferSwitch + 1) % 2;
+		}
+
+		header.dataSize = STREAMING_CHANNELS * BUFFER_SAMPLES_PER_CHANNEL * 2 * counter;
+		header.overallSize = header.dataSize + 36;
+		file.seekp(0);
+		file.write((const char*)&header, sizeof(WaveHeader));
+		file.close();
+
+	} while (recording);
+
+	pthread_exit(NULL);
 }
 
 void *record2Remote(void* null)

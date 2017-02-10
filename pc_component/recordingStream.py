@@ -25,6 +25,11 @@ class RecordingStream(threading.Thread):
             file_buffer = self.device.tcpConnection.recv(4096) # it will not always receive the specified bytes
 
             file_buffer_length = len(file_buffer)
+
+            if file_buffer_length == 0:
+                print self.device.hostname, "connection closed"
+                break
+
             bytes_received += file_buffer_length
 
             if bytes_received>=expected_bytes:

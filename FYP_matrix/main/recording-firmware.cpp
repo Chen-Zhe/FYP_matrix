@@ -310,6 +310,7 @@ void *record2Disk(void* null) {
 			rotatingRing.leds[counter%matrixCreator::kMatrixCreatorNLeds].red = 0;
 			counter++;
 			rotatingRing.leds[counter%matrixCreator::kMatrixCreatorNLeds].red = 8;
+			LedCon->updateLed(rotatingRing);
 
 			pthread_mutex_unlock(&bufferMutex[bufferSwitch]);
 			bufferSwitch = (bufferSwitch + 1) % 2;

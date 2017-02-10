@@ -263,6 +263,9 @@ void *record2Disk(void* null) {
 	matrixCreator::EverloopImage rotatingRing;
 
 	do {//fix the file size to less than 2GB maximum, create new file when recording continues
+		rotatingRing.leds[0].red = 8;
+		LedCon->updateLed(rotatingRing);
+
 		uint32_t counter = 0;
 
 		time_t t = time(NULL);

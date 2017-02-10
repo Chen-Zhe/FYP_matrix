@@ -165,11 +165,11 @@ int main(int argc, char *argv[]) {
 }
 
 void irInterrupt() {
-	static int count = 0;
+	static int count = 10;
 	static pthread_t recorderThread;
 
-	count++;
-	if (count > 30) {
+	count--;
+	if (count < 0) {
 		if (*status == 'I') {
 			LedCon->turnOffLed();
 			*status = 'L';
@@ -184,7 +184,7 @@ void irInterrupt() {
 			LedCon->updateLed();
 		}
 
-		count = 0;
+		count = 10;
 	}		
 }
 

@@ -31,11 +31,11 @@ using namespace std;
 #define HOST_NAME_LENGTH			20 //maximum number of characters for host name
 #define COMMAND_LENGTH				1
 #define STREAMING_CHANNELS			8 //Maxmium 8 channels
-#define IR_Q "/ir_q"
 
 void *record2Remote(void* null);
 void *record2Disk(void* null);
 void irInterrupt();
+void * motionDetection(void * null);
 void *udpBroadcastReceiver(void *null);
 void * recorder(void * null);
 
@@ -71,26 +71,16 @@ int main(int argc, char *argv[]) {
 	pthread_create(&udpThread, NULL, udpBroadcastReceiver, NULL);
 
 	if (argc == 1) {
-		//setup swiping detection
-		cout << "Motion sensor enabled" << endl;
-		system("gpio edge 16 both");
-		pinMode(16, INPUT);
-		pinMode(13, OUTPUT);
-		pinMode(5, OUTPUT);
-
-		digitalWrite(13, HIGH);
-		digitalWrite(5, HIGH);
-	}
-	
-	//setup pint 16 (IR) as interrupt
-	wiringPiISR(16, INT_EDGE_FALLING, &irInterrupt);
+		pthread_t motionDetect;
+		pthread_create(&motionDetect, NULL, motionDetection, NULL);
+	}	
 
 	//stand by
 	libsocket::inet_stream_server tcpServer("0.0.0.0", "8000", LIBSOCKET_IPv4);
 	cout << hostname << " - TCP server listening :8000\n";
 
 	for (matrixCreator::LedValue& led : LedCon->Image.leds) {
-		led.red = 0; led.green = 0; led.blue = 8;
+		led.red = 0; led.green = 0; led.blue = 2;
 	}
 	LedCon->updateLed();
 
@@ -102,7 +92,7 @@ int main(int argc, char *argv[]) {
 
 			//connected
 			for (matrixCreator::LedValue& led : LedCon->Image.leds) {
-				led.red = 0; led.green = 8; led.blue = 0;
+				led.red = 0; led.green = 2; led.blue = 0;
 			}
 			LedCon->updateLed();
 			pcConnected = true;
@@ -164,28 +154,46 @@ int main(int argc, char *argv[]) {
 	return 0;
 }
 
+int irPulseCount = 0;
+
 void irInterrupt() {
-	static int count = 10;
-	static pthread_t recorderThread;
+	irPulseCount++;
+}
 
-	count--;
-	if (count < 0) {
-		if (*status == 'I') {
-			LedCon->turnOffLed();
-			*status = 'L';
-			recording = true;
-			pthread_create(&recorderThread, NULL, recorder, NULL);
-			sleep(1);
-		}
-		else if (*status == 'L') {			
-			*status = 'I';
-			recording = false;
-			pthread_join(recorderThread, NULL);
-			LedCon->updateLed();
-		}
+void *motionDetection(void *null) {
+	pthread_t recorderThread;
+	//setup
+	cout << "Palm detection enabled" << endl;
+	//system("gpio edge 16 both");
+	pinMode(16, INPUT);
+	pinMode(13, OUTPUT);
+	pinMode(5, OUTPUT);
 
-		count = 10;
-	}		
+	digitalWrite(13, HIGH);
+	digitalWrite(5, HIGH);
+
+	//setup pint 16 (IR) as interrupt
+	wiringPiISR(16, INT_EDGE_FALLING, &irInterrupt);
+
+	while (true) {
+		if (irPulseCount > 20 && irPulseCount < 40) {
+			if (*status == 'I') {
+				LedCon->turnOffLed();
+				*status = 'L';
+				recording = true;
+				pthread_create(&recorderThread, NULL, recorder, NULL);
+			}
+			else if (*status == 'L') {
+				*status = 'I';
+				recording = false;
+				pthread_join(recorderThread, NULL);
+				LedCon->updateLed();
+			}
+		}
+		irPulseCount = 0;
+		sleep(1);		
+	}
+
 }
 
 void *udpBroadcastReceiver(void *null) {
@@ -268,7 +276,7 @@ void *record2Disk(void* null) {
 	matrixCreator::EverloopImage rotatingRing;
 
 	do {//fix the file size to less than 2GB maximum, create new file when recording continues
-		rotatingRing.leds[0].red = 8;
+		rotatingRing.leds[0].red = 5;
 		LedCon->updateLed(rotatingRing);
 
 		uint32_t counter = 0;
@@ -320,7 +328,7 @@ void *record2Disk(void* null) {
 
 			rotatingRing.leds[counter%matrixCreator::kMatrixCreatorNLeds].red = 0;
 			counter++;
-			rotatingRing.leds[counter%matrixCreator::kMatrixCreatorNLeds].red = 8;
+			rotatingRing.leds[counter%matrixCreator::kMatrixCreatorNLeds].red = 5;
 			LedCon->updateLed(rotatingRing);
 		}
 

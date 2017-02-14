@@ -6,9 +6,6 @@ from ntpserver import ntpServer
 
 deviceMan = pimatrix.deviceManager()
 
-def syncTime():
-    pass
-
 def printMenu():
     print "\n"
     print "Welcome to Pi-Matrix Management Console"

@@ -281,7 +281,7 @@ class WorkThread(threading.Thread):
                 sendPacket.recv_timestamp = recvTimestamp
                 sendPacket.tx_timestamp = system_to_ntp_time(time.time())
                 self.socket.sendto(sendPacket.to_data(),addr)
-                print "Sended to %s:%d" % (addr[0],addr[1])
+                #print "Sended to %s:%d" % (addr[0],addr[1])
             except Queue.Empty:
                 continue
   

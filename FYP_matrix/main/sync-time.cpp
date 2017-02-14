@@ -1,8 +1,6 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
-#include <sys/types.h>
 #include <libsocket/inetclientdgram.hpp>
 #include <libsocket/exception.hpp>
 #include <netinet/in.h>
@@ -85,7 +83,7 @@ int main(int argc, char* argv[])
 	// Print the time we got from the server, accounting for local timezone and conversion from UTC time.
 	struct timeval now;
 	now.tv_sec = txTm;
-	now.tv_usec = txTm_f;
+	now.tv_usec = packet.txTm_f;
 
 	int rc = settimeofday(&now, NULL);
 	if (rc == 0) {

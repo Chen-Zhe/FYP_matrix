@@ -240,4 +240,5 @@ ModelManifest.xml
 
 # FAKE - F# Make
 .fake/
-/pc_component/test.wav
+/pc_component/*.wav
+/pc_component/*.pyc

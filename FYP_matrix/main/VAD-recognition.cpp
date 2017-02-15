@@ -1,6 +1,4 @@
 #include <iostream>
-#include <cmath>
-#include <fstream>
 #include <unistd.h>
 #include <string>
 #include <grpc++/grpc++.h>
@@ -42,12 +40,12 @@ void *voiceActivityDetector(void *null);
 void *SpeechEnhancement(void *null);
 void *StreamingSpeechRecognition(void *null);
 
-float normalizedBuffer[2][NUM_CHANNELS][SHIFT_SIZE];
-int16_t originalBuffer[2][NUM_CHANNELS][SHIFT_SIZE];
+float normalizedBuffer[3][NUM_CHANNELS][SHIFT_SIZE];
+int16_t originalBuffer[3][NUM_CHANNELS][SHIFT_SIZE];
 
 typedef std::unique_ptr<grpc::ClientReaderWriter<StreamingRecognizeRequest,StreamingRecognizeResponse>> RecognitionDataStreamer;
 
-pthread_mutex_t normalizedBufferMutex[2] = { PTHREAD_MUTEX_INITIALIZER };
+pthread_mutex_t normalizedBufferMutex[3] = { PTHREAD_MUTEX_INITIALIZER };
 
 LedController *LedCon;
 
@@ -67,7 +65,7 @@ int main() {
 	LedCon = new LedController(&bus);
 
 	for (matrixCreator::LedValue& led : LedCon->Image.leds) {
-		led.red = 5;
+		led.red = 3;
 	}
 
 	
@@ -135,9 +133,9 @@ int main() {
 				}
 			}
 		}
-		pthread_mutex_lock(&normalizedBufferMutex[(buffer_switch + 1) % 2]);
+		pthread_mutex_lock(&normalizedBufferMutex[(buffer_switch + 1) % 3]);
 		pthread_mutex_unlock(&normalizedBufferMutex[buffer_switch]);
-		buffer_switch = (buffer_switch + 1) % 2;
+		buffer_switch = (buffer_switch + 1) % 3;
 	}
 }
 
@@ -215,6 +213,7 @@ void *voiceActivityDetector(void *null) {
 		}
 
 	}
+	pthread_exit(NULL);
 }
 
 float teagerEnergy(float frame[]) {
@@ -281,6 +280,9 @@ void *SpeechEnhancement(void *null) {
 			if (!streamStarted) { //first audio frame, send configuration first
 				streamStarted = true;
 				streamer->Write(configRequest);
+
+				streamingRequest.set_audio_content((void *)originalBuffer[(bufferSwitch-1)%3][0], dataChunkSize);
+				streamer->Write(streamingRequest);
 			}
 
 			streamingRequest.set_audio_content((void *)originalBuffer[bufferSwitch][0], dataChunkSize);
@@ -308,9 +310,9 @@ void *SpeechEnhancement(void *null) {
 		}
 
 		pthread_mutex_unlock(&normalizedBufferMutex[bufferSwitch]);
-		bufferSwitch = (bufferSwitch + 1) % 2;
+		bufferSwitch = (bufferSwitch + 1) % 3;
 	}
-
+	pthread_exit(NULL);
 }
 
 void *StreamingSpeechRecognition(void *null) {
@@ -327,11 +329,14 @@ void *StreamingSpeechRecognition(void *null) {
 			try {
 				for (int r = 0; r < response.results_size(); ++r) {
 					auto result = response.results(r);
-					*transcriptReceiver << "Result stability: " << std::to_string(result.stability()) << "\n";
+
+					if (result.stability() < 0.8 && !result.is_final()) continue;
+
+					char is_final = result.is_final()? '1' : '0';
+
 					for (int a = 0; a < result.alternatives_size(); ++a) {
 						auto alternative = result.alternatives(a);
-						*transcriptReceiver << std::to_string(alternative.confidence()) << "\t"
-							<< alternative.transcript() << "\n";
+						*transcriptReceiver << is_final + alternative.transcript() + '|';					
 					}
 				}
 

@@ -67,7 +67,7 @@ int main() {
 	LedCon = new LedController(&bus);
 
 	for (matrixCreator::LedValue& led : LedCon->Image.leds) {
-		led.red = 10;
+		led.red = 5;
 	}
 
 	
@@ -183,7 +183,7 @@ void *voiceActivityDetector(void *null) {
 			
 			noiseFrames--;
 			nf1 = fmin(alpha*nf1 + (1 - alpha)*tge1, 0.02);
-			th1 = fac1*pow(nf1, 1.5);
+			th1 = fac1*nf1;
 			th2 = fac2*nf1;
 		}
 		

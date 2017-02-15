@@ -8,8 +8,9 @@
 #include <fcntl.h>
 #include <google/cloud/speech/v1beta1/cloud_speech.grpc.pb.h>
 
-
+#include <netinet/in.h>
 #include <libsocket/inetserverstream.hpp>
+#include <libsocket/inetclientdgram.hpp>
 #include <libsocket/exception.hpp>
 #include <libsocket/socket.hpp>
 
@@ -32,6 +33,7 @@ const int32_t frameByteSize = FRAME_SIZE * sizeof(float);
 #define VAD_DOA_Q "/vad_doa_q"
 #define REC_VAD_Q "/rec_vad_q"
 #define ENC_RCO_Q "/enc_rco_q"
+#define NTP_TIMESTAMP_DELTA 2208988800ull
 
 namespace matrixCreator = matrix_hal;
 
@@ -39,6 +41,8 @@ float teagerEnergy(float frame[]);
 void *voiceActivityDetector(void *null);
 void *SpeechEnhancement(void *null);
 void *StreamingSpeechRecognition(void *null);
+
+void syncTime(string ip);
 
 float normalizedBuffer[3][NUM_CHANNELS][SHIFT_SIZE];
 int16_t originalBuffer[3][NUM_CHANNELS][SHIFT_SIZE];
@@ -76,6 +80,7 @@ int main() {
 		std::cout << "Ready to accept transcript connection" << std::endl;
 
 		transcriptReceiver = tcpServer.accept2();
+		syncTime(transcriptReceiver->gethost());
 	}
 	catch (const libsocket::socket_exception& exc)
 	{
@@ -267,6 +272,7 @@ void *SpeechEnhancement(void *null) {
 	RecognitionDataStreamer streamer = speech->StreamingRecognize(context);
 
 	mq_send(toRecognition, (char*)&streamer, 4, 0);
+	mq_send(toRecognition, (char*)context, 4, 0);
 
 	StreamingRecognizeRequest streamingRequest;
 
@@ -297,7 +303,6 @@ void *SpeechEnhancement(void *null) {
 				//If 'invalid authentication credential' error comes up, manually sync R-pi's time
 			}
 
-			delete context;
 
 			// start a new speech stub
 			speech = Speech::NewStub(channel);
@@ -305,6 +310,7 @@ void *SpeechEnhancement(void *null) {
 			streamer = speech->StreamingRecognize(context);
 
 			mq_send(toRecognition, (char*)&streamer, 4, 0);
+			mq_send(toRecognition, (char*)context, 4, 0);
 
 			streamStarted = false;
 		}
@@ -318,10 +324,12 @@ void *SpeechEnhancement(void *null) {
 void *StreamingSpeechRecognition(void *null) {
 	StreamingRecognizeResponse response;
 	RecognitionDataStreamer streamer;
+	grpc::ClientContext *context;
 	mqd_t fromEnhancer = mq_open(ENC_RCO_Q, O_RDONLY);
 
 	while(true){
 		mq_receive(fromEnhancer, (char*)&streamer, 4, NULL);
+		mq_receive(fromEnhancer, (char*)&context, 4, NULL);
 
 		while (streamer->Read(&response)) {  // Returns false when no more to read.
 											 // Dump the transcript of all the results.
@@ -349,6 +357,81 @@ void *StreamingSpeechRecognition(void *null) {
 				pthread_exit(NULL);//terminate itself
 			}
 		}
+		
+		delete context;
 	}
 
+}
+
+void syncTime(string ip) {
+
+	string remoteIP;
+	string remotePort;
+
+	remoteIP.resize(16);
+	remotePort.resize(16);
+	// Total: 384 bits or 48 bytes.
+	typedef struct
+	{
+
+		unsigned li : 2;       // Only two bits. Leap indicator.
+		unsigned vn : 3;       // Only three bits. Version number of the protocol.
+		unsigned mode : 3;       // Only three bits. Mode. Client will pick mode 3 for client.
+
+		uint8_t stratum;         // Eight bits. Stratum level of the local clock.
+		uint8_t poll;            // Eight bits. Maximum interval between successive messages.
+		uint8_t precision;       // Eight bits. Precision of the local clock.
+
+		uint32_t rootDelay;      // 32 bits. Total round trip delay time.
+		uint32_t rootDispersion; // 32 bits. Max error aloud from primary clock source.
+		uint32_t refId;          // 32 bits. Reference clock identifier.
+
+		uint32_t refTm_s;        // 32 bits. Reference time-stamp seconds.
+		uint32_t refTm_f;        // 32 bits. Reference time-stamp fraction of a second.
+
+		uint32_t origTm_s;       // 32 bits. Originate time-stamp seconds.
+		uint32_t origTm_f;       // 32 bits. Originate time-stamp fraction of a second.
+
+		uint32_t rxTm_s;         // 32 bits. Received time-stamp seconds.
+		uint32_t rxTm_f;         // 32 bits. Received time-stamp fraction of a second.
+
+		uint32_t txTm_s;         // 32 bits and the most important field the client cares about. Transmit time-stamp seconds.
+		uint32_t txTm_f;         // 32 bits. Transmit time-stamp fraction of a second.
+
+	} ntp_packet;
+
+	ntp_packet packet = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+	memset(&packet, 0, sizeof(ntp_packet));
+
+	// Set the first byte's bits to 00,011,011 for li = 0, vn = 3, and mode = 3. The rest will be left set to zero.
+
+	*((char *)&packet) = 0x1b; // Represents 27 in base 10 or 00011011 in base 2.
+
+	libsocket::inet_dgram_client sock(LIBSOCKET_IPv4);
+	sock.sndto(&packet, 48, ip, "1230");
+	sock.rcvfrom(&packet, 48, remoteIP, remotePort);
+
+
+	// These two fields contain the time-stamp seconds as the packet left the NTP server.
+	// The number of seconds correspond to the seconds passed since 1900.
+	// ntohl() converts the bit/byte order from the network's to host's "endianness".
+
+	packet.txTm_s = ntohl(packet.txTm_s); // Time-stamp seconds.
+	packet.txTm_f = ntohl(packet.txTm_f); // Time-stamp fraction of a second.
+
+										  // Extract the 32 bits that represent the time-stamp seconds (since NTP epoch) from when the packet left the server.
+										  // Subtract 70 years worth of seconds from the seconds since 1900.
+										  // This leaves the seconds since the UNIX epoch of 1970.
+										  // (1900)------------------(1970)**************************************(Time Packet Left the Server)
+
+	time_t txTm = (time_t)(packet.txTm_s - NTP_TIMESTAMP_DELTA);
+
+	char command[30];
+	sprintf(command, "sudo date -s '@%d'", txTm);
+
+	if (system(command) == -1)
+		cout << "Unable to set system time" << endl;
+	else
+		cout << "Time synchronised with remote PC" << endl;
 }

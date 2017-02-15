@@ -1,6 +1,7 @@
 import socket
 import datetime
 import threading
+from ntpserver import ntpServer
 
 class DisplayTranscript(threading.Thread):
     def __init__(self):
@@ -33,7 +34,7 @@ class DisplayTranscript(threading.Thread):
                 else:
                     print "\r", res[1:],
 
-
+ntp = ntpServer()
 
 raw_input("Press Enter to connect...")
 
@@ -41,6 +42,7 @@ thread = DisplayTranscript()
 thread.keep_alive = True
 thread.start()
 raw_input("Press Enter again to disconnect...\n")
+ntp.stop()
 thread.keep_alive = False
 thread.connection.close()
 thread.join()

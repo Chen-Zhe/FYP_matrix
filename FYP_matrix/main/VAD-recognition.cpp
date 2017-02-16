@@ -68,9 +68,10 @@ int main() {
 
 	LedCon = new LedController(&bus);
 
-	for (matrixCreator::LedValue& led : LedCon->Image.leds) {
-		led.red = 3;
-	}
+	LedCon->Image.leds[0].red = 3;
+	LedCon->Image.leds[8].red = 3;
+	LedCon->Image.leds[17].red = 3;
+	LedCon->Image.leds[26].red = 3;
 
 	
 	try {
@@ -429,7 +430,7 @@ void syncTime(string ip) {
 
 	char command[30];
 	sprintf(command, "sudo date -s '@%d'", txTm);
-
+	
 	if (system(command) == -1)
 		cout << "Unable to set system time" << endl;
 	else

@@ -242,8 +242,8 @@ void irInterrupt() {
 
 void *motionDetection(void *null) {
 	pthread_t recorderThread;
+	
 	//setup
-	cout << "Motion detection enabled" << endl;
 	//system("gpio edge 16 both");
 	pinMode(16, INPUT);
 	pinMode(13, OUTPUT);
@@ -252,7 +252,9 @@ void *motionDetection(void *null) {
 	digitalWrite(13, HIGH);
 	digitalWrite(5, HIGH);
 
-	//setup pint 16 (IR) as interrupt
+	sleep(1);
+	//setup pin 16 (IR) as interrupt
+	cout << "Motion detection enabled" << endl;
 	wiringPiISR(16, INT_EDGE_FALLING, &irInterrupt);
 
 	while (true) {

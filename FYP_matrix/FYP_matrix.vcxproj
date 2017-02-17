@@ -127,7 +127,6 @@
     <ClInclude Include="matrix-hal\cpp\driver\uv_data.h" />
     <ClInclude Include="matrix-hal\cpp\driver\uv_sensor.h" />
     <ClInclude Include="matrix-hal\cpp\driver\wishbone_bus.h" />
-    <ClInclude Include="resource.h" />
     <ClInclude Include="webrtc-vad\cpu_features_wrapper.h" />
     <ClInclude Include="webrtc-vad\signal_processing\complex_fft_tables.h" />
     <ClInclude Include="webrtc-vad\signal_processing\include\real_fft.h" />
@@ -140,9 +139,6 @@
     <ClInclude Include="webrtc-vad\vad\vad_filterbank.h" />
     <ClInclude Include="webrtc-vad\vad\vad_gmm.h" />
     <ClInclude Include="webrtc-vad\vad\vad_sp.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="MatrixCreator.rc" />
   </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <ClCompile>

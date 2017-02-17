@@ -120,11 +120,11 @@
     <Filter Include="Library\DOA">
       <UniqueIdentifier>{97c9385e-857a-42d3-8032-5e144451b60d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Library\WebRTC-VAD">
-      <UniqueIdentifier>{d34414ff-1a0f-49ef-a91b-3550d8e51baf}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Library\Matrix-HAL">
       <UniqueIdentifier>{e19c8111-e836-4f82-9421-d9a9923328c9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\WebRTC-VAD">
+      <UniqueIdentifier>{373af52e-4298-428d-bea0-7d904c1294c8}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -215,11 +215,10 @@
     <ClInclude Include="doa\DoaOutput.h">
       <Filter>Library\DOA</Filter>
     </ClInclude>
-    <ClInclude Include="resource.h" />
-    <ClInclude Include="webrtc-vad\cpu_features_wrapper.h">
+    <ClInclude Include="webrtc-vad\typedefs.h">
       <Filter>Library\WebRTC-VAD</Filter>
     </ClInclude>
-    <ClInclude Include="webrtc-vad\typedefs.h">
+    <ClInclude Include="webrtc-vad\cpu_features_wrapper.h">
       <Filter>Library\WebRTC-VAD</Filter>
     </ClInclude>
     <ClInclude Include="webrtc-vad\vad\vad_core.h">
@@ -252,8 +251,5 @@
     <ClInclude Include="webrtc-vad\signal_processing\include\spl_inl.h">
       <Filter>Library\WebRTC-VAD</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="MatrixCreator.rc" />
   </ItemGroup>
 </Project>

@@ -3,12 +3,10 @@
 #include <fstream>
 #include <unistd.h>
 #include <string>
-//#include <grpc++/grpc++.h>
 
 #include <pthread.h>
 #include <mqueue.h>
 #include <fcntl.h>
-//#include <google/cloud/speech/v1beta1/cloud_speech.grpc.pb.h>
 
 #include "LedController.h"
 
@@ -16,7 +14,7 @@
 #include "../matrix-hal/cpp/driver/wishbone_bus.h"
 
 #include "../doa/Doa.h"
-
+#include "../webrtc-vad/vad/include/webrtc_vad.h"
 
 #define FRAME_SIZE 512
 #define NUM_CHANNELS 8

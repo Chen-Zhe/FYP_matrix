@@ -224,7 +224,7 @@ void *DOAcalculation(void *null) {
 */
 
 
-//re-purposed for google's streaming speech transcription
+//re-purposed for VAD speech segment recording
 void *DOAcalculation(void *null) {
 	uint32_t bufferSwitch = 0;
 	uint32_t name = 0;

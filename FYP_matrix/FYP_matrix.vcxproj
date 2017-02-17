@@ -65,7 +65,7 @@
     <ClCompile Include="doa\CSVD.cpp" />
     <ClCompile Include="doa\Doa.cpp" />
     <ClCompile Include="doa\DoaFuncs.cpp" />
-    <ClCompile Include="main\VAD-recognition.cpp" />
+    <ClCompile Include="main\VAD-DOA.cpp" />
     <ClCompile Include="matrix-hal\dummy_sensor.cpp" />
     <ClCompile Include="matrix-hal\everloop.cpp" />
     <ClCompile Include="matrix-hal\gpio_control.cpp" />
@@ -77,6 +77,25 @@
     <ClCompile Include="matrix-hal\pressure_sensor.cpp" />
     <ClCompile Include="matrix-hal\uv_sensor.cpp" />
     <ClCompile Include="matrix-hal\wishbone_bus.cpp" />
+    <ClCompile Include="webrtc-vad\signal_processing\complex_bit_reverse.c" />
+    <ClCompile Include="webrtc-vad\signal_processing\complex_fft.c" />
+    <ClCompile Include="webrtc-vad\signal_processing\cross_correlation.c" />
+    <ClCompile Include="webrtc-vad\signal_processing\division_operations.c" />
+    <ClCompile Include="webrtc-vad\signal_processing\downsample_fast.c" />
+    <ClCompile Include="webrtc-vad\signal_processing\energy.c" />
+    <ClCompile Include="webrtc-vad\signal_processing\get_scaling_square.c" />
+    <ClCompile Include="webrtc-vad\signal_processing\min_max_operations.c" />
+    <ClCompile Include="webrtc-vad\signal_processing\real_fft.c" />
+    <ClCompile Include="webrtc-vad\signal_processing\resample_48khz.c" />
+    <ClCompile Include="webrtc-vad\signal_processing\resample_by_2_internal.c" />
+    <ClCompile Include="webrtc-vad\signal_processing\resample_fractional.c" />
+    <ClCompile Include="webrtc-vad\signal_processing\spl_init.c" />
+    <ClCompile Include="webrtc-vad\signal_processing\vector_scaling_operations.c" />
+    <ClCompile Include="webrtc-vad\vad\vad_core.c" />
+    <ClCompile Include="webrtc-vad\vad\vad_filterbank.c" />
+    <ClCompile Include="webrtc-vad\vad\vad_gmm.c" />
+    <ClCompile Include="webrtc-vad\vad\vad_sp.c" />
+    <ClCompile Include="webrtc-vad\vad\webrtc_vad.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="doa\CFFTW.h" />
@@ -108,6 +127,22 @@
     <ClInclude Include="matrix-hal\cpp\driver\uv_data.h" />
     <ClInclude Include="matrix-hal\cpp\driver\uv_sensor.h" />
     <ClInclude Include="matrix-hal\cpp\driver\wishbone_bus.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="webrtc-vad\cpu_features_wrapper.h" />
+    <ClInclude Include="webrtc-vad\signal_processing\complex_fft_tables.h" />
+    <ClInclude Include="webrtc-vad\signal_processing\include\real_fft.h" />
+    <ClInclude Include="webrtc-vad\signal_processing\include\signal_processing_library.h" />
+    <ClInclude Include="webrtc-vad\signal_processing\include\spl_inl.h" />
+    <ClInclude Include="webrtc-vad\signal_processing\resample_by_2_internal.h" />
+    <ClInclude Include="webrtc-vad\typedefs.h" />
+    <ClInclude Include="webrtc-vad\vad\include\webrtc_vad.h" />
+    <ClInclude Include="webrtc-vad\vad\vad_core.h" />
+    <ClInclude Include="webrtc-vad\vad\vad_filterbank.h" />
+    <ClInclude Include="webrtc-vad\vad\vad_gmm.h" />
+    <ClInclude Include="webrtc-vad\vad\vad_sp.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MatrixCreator.rc" />
   </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <ClCompile>

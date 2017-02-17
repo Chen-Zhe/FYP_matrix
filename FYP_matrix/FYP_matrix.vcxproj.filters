@@ -49,8 +49,65 @@
     <ClCompile Include="doa\DoaFuncs.cpp">
       <Filter>Library\DOA</Filter>
     </ClCompile>
-    <ClCompile Include="main\VAD-recognition.cpp">
+    <ClCompile Include="main\VAD-DOA.cpp">
       <Filter>main</Filter>
+    </ClCompile>
+    <ClCompile Include="webrtc-vad\vad\vad_core.c">
+      <Filter>Library\WebRTC-VAD</Filter>
+    </ClCompile>
+    <ClCompile Include="webrtc-vad\vad\vad_filterbank.c">
+      <Filter>Library\WebRTC-VAD</Filter>
+    </ClCompile>
+    <ClCompile Include="webrtc-vad\vad\vad_gmm.c">
+      <Filter>Library\WebRTC-VAD</Filter>
+    </ClCompile>
+    <ClCompile Include="webrtc-vad\vad\vad_sp.c">
+      <Filter>Library\WebRTC-VAD</Filter>
+    </ClCompile>
+    <ClCompile Include="webrtc-vad\vad\webrtc_vad.c">
+      <Filter>Library\WebRTC-VAD</Filter>
+    </ClCompile>
+    <ClCompile Include="webrtc-vad\signal_processing\complex_bit_reverse.c">
+      <Filter>Library\WebRTC-VAD</Filter>
+    </ClCompile>
+    <ClCompile Include="webrtc-vad\signal_processing\complex_fft.c">
+      <Filter>Library\WebRTC-VAD</Filter>
+    </ClCompile>
+    <ClCompile Include="webrtc-vad\signal_processing\cross_correlation.c">
+      <Filter>Library\WebRTC-VAD</Filter>
+    </ClCompile>
+    <ClCompile Include="webrtc-vad\signal_processing\division_operations.c">
+      <Filter>Library\WebRTC-VAD</Filter>
+    </ClCompile>
+    <ClCompile Include="webrtc-vad\signal_processing\downsample_fast.c">
+      <Filter>Library\WebRTC-VAD</Filter>
+    </ClCompile>
+    <ClCompile Include="webrtc-vad\signal_processing\energy.c">
+      <Filter>Library\WebRTC-VAD</Filter>
+    </ClCompile>
+    <ClCompile Include="webrtc-vad\signal_processing\get_scaling_square.c">
+      <Filter>Library\WebRTC-VAD</Filter>
+    </ClCompile>
+    <ClCompile Include="webrtc-vad\signal_processing\min_max_operations.c">
+      <Filter>Library\WebRTC-VAD</Filter>
+    </ClCompile>
+    <ClCompile Include="webrtc-vad\signal_processing\real_fft.c">
+      <Filter>Library\WebRTC-VAD</Filter>
+    </ClCompile>
+    <ClCompile Include="webrtc-vad\signal_processing\resample_48khz.c">
+      <Filter>Library\WebRTC-VAD</Filter>
+    </ClCompile>
+    <ClCompile Include="webrtc-vad\signal_processing\resample_by_2_internal.c">
+      <Filter>Library\WebRTC-VAD</Filter>
+    </ClCompile>
+    <ClCompile Include="webrtc-vad\signal_processing\resample_fractional.c">
+      <Filter>Library\WebRTC-VAD</Filter>
+    </ClCompile>
+    <ClCompile Include="webrtc-vad\signal_processing\spl_init.c">
+      <Filter>Library\WebRTC-VAD</Filter>
+    </ClCompile>
+    <ClCompile Include="webrtc-vad\signal_processing\vector_scaling_operations.c">
+      <Filter>Library\WebRTC-VAD</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -60,11 +117,14 @@
     <Filter Include="Library">
       <UniqueIdentifier>{11fcf399-230a-47c0-af3f-d621c818b1bd}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Library\Matrix-HAL">
-      <UniqueIdentifier>{e19c8111-e836-4f82-9421-d9a9923328c9}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Library\DOA">
       <UniqueIdentifier>{97c9385e-857a-42d3-8032-5e144451b60d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\WebRTC-VAD">
+      <UniqueIdentifier>{d34414ff-1a0f-49ef-a91b-3550d8e51baf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Library\Matrix-HAL">
+      <UniqueIdentifier>{e19c8111-e836-4f82-9421-d9a9923328c9}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -155,5 +215,45 @@
     <ClInclude Include="doa\DoaOutput.h">
       <Filter>Library\DOA</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="webrtc-vad\cpu_features_wrapper.h">
+      <Filter>Library\WebRTC-VAD</Filter>
+    </ClInclude>
+    <ClInclude Include="webrtc-vad\typedefs.h">
+      <Filter>Library\WebRTC-VAD</Filter>
+    </ClInclude>
+    <ClInclude Include="webrtc-vad\vad\vad_core.h">
+      <Filter>Library\WebRTC-VAD</Filter>
+    </ClInclude>
+    <ClInclude Include="webrtc-vad\vad\vad_filterbank.h">
+      <Filter>Library\WebRTC-VAD</Filter>
+    </ClInclude>
+    <ClInclude Include="webrtc-vad\vad\vad_gmm.h">
+      <Filter>Library\WebRTC-VAD</Filter>
+    </ClInclude>
+    <ClInclude Include="webrtc-vad\vad\vad_sp.h">
+      <Filter>Library\WebRTC-VAD</Filter>
+    </ClInclude>
+    <ClInclude Include="webrtc-vad\vad\include\webrtc_vad.h">
+      <Filter>Library\WebRTC-VAD</Filter>
+    </ClInclude>
+    <ClInclude Include="webrtc-vad\signal_processing\complex_fft_tables.h">
+      <Filter>Library\WebRTC-VAD</Filter>
+    </ClInclude>
+    <ClInclude Include="webrtc-vad\signal_processing\resample_by_2_internal.h">
+      <Filter>Library\WebRTC-VAD</Filter>
+    </ClInclude>
+    <ClInclude Include="webrtc-vad\signal_processing\include\real_fft.h">
+      <Filter>Library\WebRTC-VAD</Filter>
+    </ClInclude>
+    <ClInclude Include="webrtc-vad\signal_processing\include\signal_processing_library.h">
+      <Filter>Library\WebRTC-VAD</Filter>
+    </ClInclude>
+    <ClInclude Include="webrtc-vad\signal_processing\include\spl_inl.h">
+      <Filter>Library\WebRTC-VAD</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MatrixCreator.rc" />
   </ItemGroup>
 </Project>

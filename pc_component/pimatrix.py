@@ -11,6 +11,7 @@ class deviceManager():
     def __init__(self):
         self.deviceList = []
         self.numDevices = 0
+        self.deviceBusy = False
 
     def discoverDevices(self):
         newDevices = []
@@ -34,6 +35,8 @@ class deviceManager():
         
             pimatrix.hostname=str(data[1:]).rstrip(" \t\r\n\0")
             pimatrix.status=str(data[0])
+            if not pimatrix.status == 'I':
+                self.deviceBusy = True
         
         self.deviceList.extend(newDevices)
         self.numDevices += len(newDevices)
@@ -62,15 +65,21 @@ class deviceManager():
             "shutdown": "T",
             "rec2net": "N",
             "rec2sd": "L",
-            "lvcsr": "S"
+            "stop": "S"
             }
+        
+        if command == 'stop':
+            status = "I"
+            self.deviceBusy = False
+        else:
+            status = commandKeyword[command]
+            self.deviceBusy = True
+        
         for pimatrix in self.deviceList:
             try:
                 pimatrix.tcpConnection.send(commandKeyword[command])
-                if pimatrix.status == commandKeyword[command]:
-                    pimatrix.status = "I"
-                else:
-                    pimatrix.status = commandKeyword[command]
+                pimatrix.status = status
+
             except:
                 print "{0}({1}) timed out!".format(pimatrix.hostname,pimatrix.ip)
                 self.deviceList.remove(pimatrix)

@@ -110,10 +110,12 @@ int main(int argc, char *argv[]) {
 			while (tcpConnection->rcv(&command, 1, MSG_WAITALL)) {
 				switch (command) {
 				case 'N': {//record to network
-					*status = 'N';
-					recording = true;
-					pthread_create(&recorderThread, NULL, recorder, NULL);
-					break;
+					if (*status == 'I') {
+						*status = 'N';
+						recording = true;
+						pthread_create(&recorderThread, NULL, recorder, NULL);
+						break;
+					}
 				}
 				case 'L': {//record to disk
 					if (*status == 'I') {
@@ -121,15 +123,33 @@ int main(int argc, char *argv[]) {
 						recording = true;
 						pthread_create(&recorderThread, NULL, recorder, NULL);
 					}
-					else if (*status == 'L') {
-						*status = 'I';
-						recording = false;
-						pthread_join(recorderThread, NULL);
-						LedCon->updateLed();
-					}
 
 					break;
 				}
+
+				case 'S': { //stop everything
+
+					switch (*status) {
+						case 'L': {
+							*status = 'I';
+							recording = false;
+							pthread_join(recorderThread, NULL);
+							LedCon->updateLed();
+							break;
+						}
+						case 'N': {
+							*status = 'I';
+							recording = false;
+							pthread_join(recorderThread, NULL);
+							LedCon->updateLed();
+							break;
+						}
+					}
+
+					
+					break;
+				}
+
 				case 'T': {
 					LedCon->turnOffLed(); system("sudo shutdown now");
 					break;

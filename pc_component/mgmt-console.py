@@ -14,9 +14,12 @@ def printMenu():
     if deviceMan.numDevices > 0:
         print "2. Connected devices' detail"
         print "----------------------------"
-        print "3. Record over network"
-        print "4. Record to disk"
-        print "5. Use device as LVCSR"
+        if not deviceMan.deviceBusy:
+            print "3. Record over network"
+            print "4. Record to disk"
+            print "5. Use device as LVCSR"
+        else:
+            print "8. Stop all devices' current task"
         print "----------------------"
         print "9. Disconnect from all devices"
         print "0. Shutdown all devices"
@@ -52,6 +55,9 @@ while(True):
 
     elif choice == 5:
         pass
+    
+    elif choice == 8:
+        deviceMan.sendComman("stop")
 
     elif choice == 9:
         deviceMan.disconnectAll()

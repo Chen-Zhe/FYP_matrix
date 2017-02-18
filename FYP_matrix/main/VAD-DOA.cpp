@@ -29,14 +29,14 @@ namespace matrixCreator = matrix_hal;
 void *voiceActivityDetector(void *null);
 void *DOAcalculation(void *null);
 
-//float normalizedBuffer[2][NUM_CHANNELS][SHIFT_SIZE];
+//float normalizedBuffer[3][NUM_CHANNELS][SHIFT_SIZE];
 int16_t originalBuffer[3][NUM_CHANNELS][SHIFT_SIZE];
 
-pthread_mutex_t normalizedBufferMutex[3] = { PTHREAD_MUTEX_INITIALIZER };
+//pthread_mutex_t normalizedBufferMutex[3] = { PTHREAD_MUTEX_INITIALIZER };
 
 LedController *LedCon;
 
-int main() {
+int main(int argc, char *argv[]) {
 	//initilization of all message queues, parameters, devices, etc.
 
 	//init microphone array and LEDs
@@ -46,10 +46,7 @@ int main() {
 	matrixCreator::MicrophoneArray microphoneArray;
 
 	LedCon = new LedController(&bus);
-
-	for (matrixCreator::LedValue& led : LedCon->Image.leds) {
-		led.red = 10;
-	}
+	LedCon->turnOffLed();
 
 	//------init all queues------
 	//init recorder -> VAD queue to send 1 frame of normalized recording
@@ -71,7 +68,7 @@ int main() {
 	int32_t buffer_switch = 0;
 
 	//------init all threads------
-	pthread_mutex_lock(&normalizedBufferMutex[buffer_switch]);
+	//pthread_mutex_lock(&normalizedBufferMutex[buffer_switch]);
 
 	pthread_t VAD;
 	pthread_t DOA;
@@ -82,15 +79,15 @@ int main() {
 
 	//------recorder thread------
 	while (true) {
-		uint32_t step = 0;
+		int32_t step = 0;
 		while (step < SHIFT_SIZE) {
 
 			microphoneArray.Read();
 
-			for (uint32_t s = 0; s < microphoneArray.NumberOfSamples(); s++) {
-				for (uint32_t c = 0; c < NUM_CHANNELS; c++) {
+			for (int32_t sample = 0; sample < microphoneArray.NumberOfSamples(); sample++) {
+				for (int32_t ch = 0; ch < NUM_CHANNELS; ch++) {
 					//normalizedBuffer[buffer_switch][c][step] = microphoneArray.At(s, c) / 32768.0;
-					originalBuffer[buffer_switch][c][step] = microphoneArray.At(s, c);
+					originalBuffer[buffer_switch][ch][step] = microphoneArray.At(sample, ch);
 				}
 				step++;
 
@@ -99,8 +96,8 @@ int main() {
 				}
 			}
 		}
-		pthread_mutex_lock(&normalizedBufferMutex[(buffer_switch + 1) % 3]);
-		pthread_mutex_unlock(&normalizedBufferMutex[buffer_switch]);
+		//pthread_mutex_lock(&normalizedBufferMutex[(buffer_switch + 1) % 3]);
+		//pthread_mutex_unlock(&normalizedBufferMutex[buffer_switch]);
 		buffer_switch = (buffer_switch + 1) % 3;
 	}
 }
@@ -143,13 +140,13 @@ void *voiceActivityDetector(void *null) {
 				else
 					extendVadFor1Frame = false;
 				
-				LedCon->updateLed();
+				//LedCon->updateLed();
 
 				mq_send(toDoa, (char*)&vadPositiveMsg, 4, 0);
 				std::cout << "Voice Detected" << std::endl;
 			}
 			else {//no voice activity				
-				LedCon->turnOffLed();
+				//LedCon->turnOffLed();
 				extendVadFor1Frame = false;
 
 				mq_send(toDoa, (char*)&vadNegativeMsg, 4, 0);
@@ -161,9 +158,10 @@ void *voiceActivityDetector(void *null) {
 	}
 }
 
-/*
+
 void *DOAcalculation(void *null) {
-	Doa DOA(16000, 8, 15360, SHIFT_SIZE);
+	float internalBuffer[NUM_CHANNELS][SHIFT_SIZE];
+	Doa DOA(16000, 8, 30720, SHIFT_SIZE);
 	DOA.initialize();	
 	DoaOutput result;
 	uint32_t bufferSwitch = 0;
@@ -174,21 +172,42 @@ void *DOAcalculation(void *null) {
 
 	//------DOA thread------
 	while (true) {
-		pthread_mutex_lock(&normalizedBufferMutex[bufferSwitch]);
+		//pthread_mutex_lock(&normalizedBufferMutex[bufferSwitch]);
+
+		for (int ch = 0; ch < NUM_CHANNELS; ch++) {
+			for (int sample = 0; sample < SHIFT_SIZE; sample++) {
+				internalBuffer[ch][sample] = originalBuffer[bufferSwitch][ch][sample];
+			}
+		}
+
 		mq_receive(fromVad, (char*)&shiftVadStatus, 4, NULL); //blocking
 
-		result = DOA.processBuffer((float*)normalizedBuffer[bufferSwitch], (shiftVadStatus>0));
-		if (result.hasDOA)
+		result = DOA.processBuffer((float*)internalBuffer, shiftVadStatus);
+		if (result.hasDOA) {
 			std::cout << "theta1 = " << result.theta1 << " theta2 = " << result.theta2 << std::endl;
 
-		pthread_mutex_unlock(&normalizedBufferMutex[bufferSwitch]);
-		bufferSwitch = (bufferSwitch + 1) % 2;
+			int ledOffset = 35 * result.theta2 / 360;
+			for (int i = 34; i >= 0; i--) {
+				if ((35 + 28 + ledOffset - i) % 35 <= 2 || (35 + 11 + ledOffset - i) % 35 <= 2) {
+					LedCon->Image.leds[i].red = 3;
+				}
+				else {
+					LedCon->Image.leds[i].red = 0;
+				}
+			}
+			LedCon->updateLed();
+		}
+		else
+			LedCon->turnOffLed();
+
+		//pthread_mutex_unlock(&normalizedBufferMutex[bufferSwitch]);
+		bufferSwitch = (bufferSwitch + 1) % 3;
 	}
 
 }
-*/
 
 
+/*
 //re-purposed for VAD speech segment recording
 void *DOAcalculation(void *null) {
 	uint32_t bufferSwitch = 0;
@@ -200,11 +219,11 @@ void *DOAcalculation(void *null) {
 	mqd_t fromVad = mq_open(VAD_DOA_Q, O_RDONLY);
 
 	std::string filename = "vad_" + std::to_string(name) + ".pcm";
-	std::ofstream *file = new std::ofstream(filename, std::ofstream::binary);
+	std::ofstream *file;
 
 	//------DOA thread------
 	while (true) {
-		pthread_mutex_lock(&normalizedBufferMutex[bufferSwitch]);
+		//pthread_mutex_lock(&normalizedBufferMutex[bufferSwitch]);
 		mq_receive(fromVad, (char*)&shiftVadStatus, 4, NULL); //blocking
 
 		if (shiftVadStatus > 0) {
@@ -226,8 +245,9 @@ void *DOAcalculation(void *null) {
 			fileWritten = false;
 		}
 
-		pthread_mutex_unlock(&normalizedBufferMutex[bufferSwitch]);
+		//pthread_mutex_unlock(&normalizedBufferMutex[bufferSwitch]);
 		bufferSwitch = (bufferSwitch + 1) % 3;
 	}
 
 }
+*/

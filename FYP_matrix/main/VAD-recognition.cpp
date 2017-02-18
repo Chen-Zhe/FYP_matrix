@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <unistd.h>
 #include <string>
 #include <grpc++/grpc++.h>
@@ -19,17 +20,19 @@
 #include "../matrix-hal/cpp/driver/microphone_array.h"
 #include "../matrix-hal/cpp/driver/wishbone_bus.h"
 
+#include "../webrtc-vad/vad/include/webrtc_vad.h"
+
 using google::cloud::speech::v1beta1::RecognitionConfig;
 using google::cloud::speech::v1beta1::Speech;
 using google::cloud::speech::v1beta1::StreamingRecognizeRequest;
 using google::cloud::speech::v1beta1::StreamingRecognizeResponse;
 
 
-#define FRAME_SIZE 512
+#define FRAME_SIZE 480
 #define NUM_CHANNELS 8
-#define SHIFT_SIZE 5120
+#define SHIFT_SIZE 7680
 const int32_t numFramesPerShift = SHIFT_SIZE / FRAME_SIZE;
-const int32_t frameByteSize = FRAME_SIZE * sizeof(float);
+const int32_t frameByteSize = FRAME_SIZE * sizeof(int16_t);
 #define VAD_DOA_Q "/vad_doa_q"
 #define REC_VAD_Q "/rec_vad_q"
 #define ENC_RCO_Q "/enc_rco_q"
@@ -37,19 +40,17 @@ const int32_t frameByteSize = FRAME_SIZE * sizeof(float);
 
 namespace matrixCreator = matrix_hal;
 
-float teagerEnergy(float frame[]);
+void * stopMonitor(void * null);
+
 void *voiceActivityDetector(void *null);
-void *SpeechEnhancement(void *null);
+void *SpeechRecognition(void *null);
 void *StreamingSpeechRecognition(void *null);
 
 void syncTime(string ip);
 
-float normalizedBuffer[3][NUM_CHANNELS][SHIFT_SIZE];
 int16_t originalBuffer[3][NUM_CHANNELS][SHIFT_SIZE];
 
 typedef std::unique_ptr<grpc::ClientReaderWriter<StreamingRecognizeRequest,StreamingRecognizeResponse>> RecognitionDataStreamer;
-
-pthread_mutex_t normalizedBufferMutex[3] = { PTHREAD_MUTEX_INITIALIZER };
 
 LedController *LedCon;
 
@@ -109,100 +110,86 @@ int main() {
 	int32_t buffer_switch = 0;
 
 	//------init all threads------
-	pthread_mutex_lock(&normalizedBufferMutex[buffer_switch]);
 
 	pthread_t VAD;
 	pthread_t DOA;
-	
+	pthread_t monitor;
+
 	pthread_create(&VAD, NULL, voiceActivityDetector, (void *)NULL);
-	pthread_create(&DOA, NULL, SpeechEnhancement, (void *)NULL);
-	
+	pthread_create(&DOA, NULL, SpeechRecognition, (void *)NULL);
+	pthread_create(&monitor, NULL, stopMonitor, (void *)NULL);
 
 	microphoneArray.Setup(&bus);
 
 	//------recorder thread------
 	while (running) {
-		uint32_t step = 0;
+		int32_t step = 0;
 		while (step < SHIFT_SIZE) {
 
 			microphoneArray.Read();
 
-			for (uint32_t s = 0; s < microphoneArray.NumberOfSamples(); s++) {
-				for (uint32_t c = 0; c < NUM_CHANNELS; c++) {
-					normalizedBuffer[buffer_switch][c][step] = microphoneArray.At(s, c) / 32768.0;
+			for (int32_t s = 0; s < microphoneArray.NumberOfSamples(); s++) {
+				for (int32_t c = 0; c < NUM_CHANNELS; c++) {
 					originalBuffer[buffer_switch][c][step] = microphoneArray.At(s, c);
 				}
 				step++;
 
 				if (step%FRAME_SIZE == 0) {
-					mq_send(toVad, (char*)&normalizedBuffer[buffer_switch][0][step - FRAME_SIZE],frameByteSize, 0);
+					mq_send(toVad, (char*)&originalBuffer[buffer_switch][0][step - FRAME_SIZE], frameByteSize, 0);
 				}
 			}
 		}
-		pthread_mutex_lock(&normalizedBufferMutex[(buffer_switch + 1) % 3]);
-		pthread_mutex_unlock(&normalizedBufferMutex[buffer_switch]);
 		buffer_switch = (buffer_switch + 1) % 3;
 	}
 }
 
+void *stopMonitor(void *null) {
+	char command;
+	transcriptReceiver->rcv(&command, 1);
+	if (command == 'S') {
+		running = false;
+		pthread_exit(NULL);
+	}
+}
+
 void *voiceActivityDetector(void *null) {
-	float internalNormalizedFrameBuffer[FRAME_SIZE];
+	int16_t internalFrameBuffer[FRAME_SIZE];
 
-	float alpha = 0.9;
-	float nf1 = 0.02;
-	float nf2 = 0.03;
-
-	float fac1 = 1.175;
-	float fac2 = 1.2;
-	float th1 = fac1*nf1;
-	float th2 = fac2*nf2;
-
-	float tge1;
+	VadInst *webRtcVad;
+	WebRtcVad_Create(&webRtcVad);
+	WebRtcVad_Init(webRtcVad);
+	WebRtcVad_set_mode(webRtcVad, 2);
 
 	int32_t vadPositiveMsg = 1;
 	int32_t vadNegativeMsg = 0;
 
 	int32_t vadPositiveCount = 0;
-	bool extendVadFor1Frame = true;
+	bool extendVadFor1Frame = false;
 
 	int32_t frameCount = numFramesPerShift; //count down counter for 10 frames
-
-	int32_t noiseFrames = 20;
 
 	mqd_t fromRecorder = mq_open(REC_VAD_Q, O_RDONLY);
 	mqd_t toDoa = mq_open(VAD_DOA_Q, O_WRONLY);
 
 	//------VAD thread------
-	while (running) {
+	while (true) {
 
 		frameCount--;//count-down counters
-		
-		mq_receive(fromRecorder, (char*)internalNormalizedFrameBuffer, frameByteSize, NULL);
 
-		tge1 = sqrt(fabs(teagerEnergy(internalNormalizedFrameBuffer)));
+		mq_receive(fromRecorder, (char*)internalFrameBuffer, frameByteSize, NULL);
 
-		if (tge1 < th1 || noiseFrames > 0) {
-			if (tge1 < nf1) alpha = 0.98;
-			else alpha = 0.9;
-			
-			noiseFrames--;
-			nf1 = fmin(alpha*nf1 + (1 - alpha)*tge1, 0.02);
-			th1 = fac1*nf1;
-			th2 = fac2*nf1;
-		}
-		
-		if (tge1 > th2) vadPositiveCount++;
+		vadPositiveCount += WebRtcVad_Process(webRtcVad, internalFrameBuffer, 480);
 
 		if (frameCount == 0) {
 			frameCount = numFramesPerShift;//reset count-down counter
 
-			if (vadPositiveCount > 2 || (vadPositiveCount > 0 && extendVadFor1Frame)) {//voice activity detected
-				
-				if (vadPositiveCount > 2)
+			if (vadPositiveCount > 10 || (vadPositiveCount > 0 && extendVadFor1Frame)) {//voice activity detected
+
+				if (vadPositiveCount > 10)
 					extendVadFor1Frame = true;
 				else
 					extendVadFor1Frame = false;
-				
+
 				LedCon->updateLed();
 
 				mq_send(toDoa, (char*)&vadPositiveMsg, 4, 0);
@@ -215,30 +202,23 @@ void *voiceActivityDetector(void *null) {
 				mq_send(toDoa, (char*)&vadNegativeMsg, 4, 0);
 				std::cout << "No Voice" << std::endl;
 			}
-			vadPositiveCount = 0;			
+			vadPositiveCount = 0;
 		}
 
 	}
 	pthread_exit(NULL);
 }
 
-float teagerEnergy(float frame[]) {
-	float tgm = 0.0;
-
-	for (int32_t i = 0; i < FRAME_SIZE - 2; i++) {
-		float item = frame[i + 1] * frame[i + 1] - frame[i] * frame[i + 2];
-		tgm += item;//calculate mean
-	}
-
-	return tgm / (FRAME_SIZE - 2);
-}
-
-
-//Enhance speech (not done) and directly stream the speech segment to Google Speech API
-void *SpeechEnhancement(void *null) {
-	uint32_t bufferSwitch = 0;
+//Enhance speech (not done) and directly stream the speech segment to Google Speech API as well as save to disk
+void *SpeechRecognition(void *null) {
+	int32_t bufferSwitch = 0;
 	bool streamStarted = false;
 	const size_t dataChunkSize = SHIFT_SIZE * sizeof(int16_t);
+
+	int32_t speechSegmentId = 1;
+
+	std::string segmentFilePathPrefix = "/home/pi/Recordings/sseg_";
+	std::ofstream *speechSegmentFile;
 
 	int32_t shiftVadStatus;
 
@@ -279,7 +259,6 @@ void *SpeechEnhancement(void *null) {
 
 	//------Speech Recognition thread------
 	while (running) {
-		pthread_mutex_lock(&normalizedBufferMutex[bufferSwitch]);
 		mq_receive(fromVad, (char*)&shiftVadStatus, 4, NULL); //blocking
 
 		if (shiftVadStatus > 0) {
@@ -288,12 +267,19 @@ void *SpeechEnhancement(void *null) {
 				streamStarted = true;
 				streamer->Write(configRequest);
 
-				streamingRequest.set_audio_content((void *)originalBuffer[(bufferSwitch-1)%3][0], dataChunkSize);
+				//supposed to be -1, but due to c's implementation of modulo operation, it has to be +2
+				
+				speechSegmentFile = new std::ofstream(segmentFilePathPrefix + std::to_string(speechSegmentId) + ".pcm", std::ofstream::binary);
+				speechSegmentId++;
+				speechSegmentFile->write((const char*)originalBuffer[(bufferSwitch + 2) % 3][0], SHIFT_SIZE * sizeof(int16_t));
+
+				streamingRequest.set_audio_content((void *)originalBuffer[(bufferSwitch + 2) % 3][0], dataChunkSize);
 				streamer->Write(streamingRequest);
 			}
 
-			streamingRequest.set_audio_content((void *)originalBuffer[bufferSwitch][0], dataChunkSize);
+			speechSegmentFile->write((const char*)originalBuffer[bufferSwitch][0], SHIFT_SIZE * sizeof(int16_t));
 
+			streamingRequest.set_audio_content((void *)originalBuffer[bufferSwitch][0], dataChunkSize);
 			streamer->Write(streamingRequest);
 		}
 		else if (streamStarted) {
@@ -313,10 +299,12 @@ void *SpeechEnhancement(void *null) {
 			mq_send(toRecognition, (char*)&streamer, 4, 0);
 			mq_send(toRecognition, (char*)context, 4, 0);
 
+			speechSegmentFile->close();
+			delete speechSegmentFile;
+
 			streamStarted = false;
 		}
 
-		pthread_mutex_unlock(&normalizedBufferMutex[bufferSwitch]);
 		bufferSwitch = (bufferSwitch + 1) % 3;
 	}
 	pthread_exit(NULL);

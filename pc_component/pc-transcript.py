@@ -33,6 +33,8 @@ class DisplayTranscript(threading.Thread):
                     utterance+=1
                 else:
                     print "\r", res[1:],
+        
+        self.connection.close()
 
 ntp = ntpServer()
 
@@ -42,7 +44,7 @@ thread = DisplayTranscript()
 thread.keep_alive = True
 thread.start()
 raw_input("Press Enter again to disconnect...\n")
-ntp.stop()
+thread.connection.send("S")
 thread.keep_alive = False
-thread.connection.close()
+ntp.stop()
 thread.join()

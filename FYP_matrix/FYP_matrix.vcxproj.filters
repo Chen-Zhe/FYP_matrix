@@ -49,9 +49,6 @@
     <ClCompile Include="doa\DoaFuncs.cpp">
       <Filter>Library\DOA</Filter>
     </ClCompile>
-    <ClCompile Include="main\VAD-DOA.cpp">
-      <Filter>main</Filter>
-    </ClCompile>
     <ClCompile Include="webrtc-vad\vad\vad_core.c">
       <Filter>Library\WebRTC-VAD</Filter>
     </ClCompile>
@@ -108,6 +105,9 @@
     </ClCompile>
     <ClCompile Include="webrtc-vad\signal_processing\vector_scaling_operations.c">
       <Filter>Library\WebRTC-VAD</Filter>
+    </ClCompile>
+    <ClCompile Include="main\VAD-recognition.cpp">
+      <Filter>main</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

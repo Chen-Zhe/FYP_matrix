@@ -278,7 +278,7 @@ void *motionDetection(void *null) {
 	wiringPiISR(16, INT_EDGE_FALLING, &irInterrupt);
 
 	while (true) {
-		if (irPulseCount > 30 && irPulseCount < 90) {
+		if (!pcConnected && irPulseCount > 30 && irPulseCount < 90) {
 			if (*status == 'I') {
 				LedCon->turnOffLed();
 				*status = 'L';
@@ -348,14 +348,14 @@ void *recorder(void* null) {
 	}
 
 	while (recording) {
-		uint32_t step = 0;
+		int32_t step = 0;
 		while (step < BUFFER_SAMPLES_PER_CHANNEL) {
 
 			/* The reading process is a blocking process that read in 8*128 samples every 8ms */
 			microphoneArray.Read();
 
-			for (uint16_t s = 0; s < microphoneArray.NumberOfSamples(); s++) {
-				for (uint16_t c = 0; c < STREAMING_CHANNELS; c++) {
+			for (int32_t s = 0; s < microphoneArray.NumberOfSamples(); s++) {
+				for (int32_t c = 0; c < STREAMING_CHANNELS; c++) {
 					buffer[buffer_switch][step][c] = microphoneArray.At(s, c);
 				}
 				step++;

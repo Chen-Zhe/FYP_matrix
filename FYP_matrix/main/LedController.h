@@ -39,5 +39,5 @@ public:
 private:
 	matrixCreator::Everloop Driver;
 	matrixCreator::EverloopImage LedOff;
-	bool ledOff = true;
+	bool ledOff = false;
 };

@@ -50,7 +50,7 @@ class MicrophoneArray : public MatrixDriver {
     return kMicarrayBufferSize / kMicrophoneChannels;
   }
 
-  int16_t& At(int16_t sample, int16_t channel) {
+  int16_t& At(int32_t sample, int32_t channel) {
     //return delayed_data_[sample * kMicrophoneChannels + channel];
 	  return raw_data_[sample * kMicrophoneChannels + channel];
   }

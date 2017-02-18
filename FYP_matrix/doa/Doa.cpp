@@ -8,6 +8,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <time.h>
+//#define _DEBUG_DOA
 
 using namespace std;
 
@@ -23,7 +24,16 @@ Doa::Doa(int samplingRate, int nChannels, ulong windowSize, ulong shiftSize)
    */
    numMics = 8;
    micPos = new float*[numMics];
-
+  
+   float mic0Position[3] = { 0, -5.4, 0 };
+   float mic1Position[3] = { 3.85, -3.8, 0 };
+   float mic2Position[3] = { 5.4, 0, 0 };
+   float mic3Position[3] = { 3.85, 3.8, 0 };
+   float mic4Position[3] = { 0, 5.4, 0 };
+   float mic5Position[3] = { -3.85, 3.8, 0 };
+   float mic6Position[3] = { -5.4, 0, 0 };
+   float mic7Position[3] = { -3.85, -3.8, 0 };
+  /*
    float mic0Position[3] = { 1.9708196, -4.7579795, 0 };
    float mic1Position[3] = { -2.0291803, -4.7579795, 0 };
    float mic2Position[3] = { -4.8420204, -1.9708196, 0 };
@@ -32,7 +42,7 @@ Doa::Doa(int samplingRate, int nChannels, ulong windowSize, ulong shiftSize)
    float mic5Position[3] = { 1.9708196, 4.8420204, 0 };
    float mic6Position[3] = { 4.7579795, 2.0291803, 0 };
    float mic7Position[3] = { 4.7579795, -1.9708196, 0 };
-
+   */
    micPos[0] = mic0Position;
    micPos[1] = mic1Position;
    micPos[2] = mic2Position;
@@ -43,7 +53,7 @@ Doa::Doa(int samplingRate, int nChannels, ulong windowSize, ulong shiftSize)
    micPos[7] = mic7Position;
   
    inLookAngleRange = 16;
-   searchRange = 200;
+   searchRange = 50;
    peakToSecondPeakRatio = 0;
    doaDetectThreshold = 0;
    minNumMicPairs = 0;
@@ -247,17 +257,17 @@ DoaOutput Doa::processBuffer(float* buffer, bool vadPositive)
       output.theta1 = theta1;
       output.theta2 = theta2;
 
+	  /*
 	  float theta1_sent;
 	  float adjust_theta1 = output.theta1;
 	  if (adjust_theta1 >= -90 && adjust_theta1 <= 180)
 		  theta1_sent = adjust_theta1 - (float)90;
 	  if (adjust_theta1<-90 && adjust_theta1>-180)
 		  theta1_sent = (float)270 + adjust_theta1;
-	  if (output.theta2 == 0.0)
-		  output.theta2 = 0.0;
 	  if (output.theta1 == -200)
 		  theta1_sent = (float)0.0;
 	  std::cout << "adj: " << theta1_sent << std::endl;
+	  */
    }
 
 #ifdef _DEBUG_DOA

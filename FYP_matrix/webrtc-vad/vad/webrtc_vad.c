@@ -68,11 +68,11 @@ int WebRtcVad_set_mode(VadInst* handle, int mode) {
   return WebRtcVad_set_mode_core(self, mode);
 }
 
-int WebRtcVad_Process(VadInst* handle, int fs, const int16_t* audio_frame,
+int WebRtcVad_Process(VadInst* handle, const int16_t* audio_frame,
                       int frame_length) {
   int vad = -1;
   VadInstT* self = (VadInstT*) handle;
-
+  /*
   if (handle == NULL) {
     return -1;
   }
@@ -96,7 +96,8 @@ int WebRtcVad_Process(VadInst* handle, int fs, const int16_t* audio_frame,
   } else if (fs == 8000) {
     vad = WebRtcVad_CalcVad8khz(self, audio_frame, frame_length);
   }
-
+  */
+  vad = WebRtcVad_CalcVad16khz(self, audio_frame, frame_length);
   if (vad > 0) {
     vad = 1;
   }

@@ -53,8 +53,6 @@ def _to_time(integ, frac, n=32):
     timestamp
     """
     return integ + float(frac)/2**n	
-		
-
 
 class NTPException(Exception):
     """Exception raised by this module."""
@@ -263,7 +261,7 @@ class WorkThread(threading.Thread):
     def run(self):
         while self.work:
             try:
-                data,addr,recvTimestamp = self.taskQueue.get(timeout=1)
+                data,addr,recvTimestamp = self.taskQueue.get()
                 recvPacket = NTPPacket()
                 recvPacket.from_data(data)
                 timeStamp_high,timeStamp_low = recvPacket.GetTxTimeStamp()
@@ -297,7 +295,7 @@ class ntpServer():
         self.start()
 
     def start(self):
-        print "NTP server: ", self.soc.getsockname()
+        print "NTP server :1230"
         self.recvThread.start()
         self.workThread.start()
 

@@ -28,10 +28,12 @@
 namespace matrixCreator = matrix_hal;
 using namespace std;
 
-#define BUFFER_SAMPLES_PER_CHANNEL	16384 //around 1 second, power of 2 for networking, trucation at PC side
+#define BUFFER_SAMPLES_PER_CHANNEL	16000 //1 second of recording
+#define STREAMING_CHANNELS			8 //Maxmium 8 channels
+const int32_t bufferByteSize = STREAMING_CHANNELS * BUFFER_SAMPLES_PER_CHANNEL * sizeof(int16_t)
+
 #define HOST_NAME_LENGTH			20 //maximum number of characters for host name
 #define COMMAND_LENGTH				1
-#define STREAMING_CHANNELS			8 //Maxmium 8 channels
 
 #define NTP_TIMESTAMP_DELTA 2208988800ull
 
@@ -423,7 +425,7 @@ void *record2Disk(void* null) {
 
 			pthread_mutex_lock(&bufferMutex[bufferSwitch]);
 
-			file.write((const char*)buffer[bufferSwitch], STREAMING_CHANNELS * BUFFER_SAMPLES_PER_CHANNEL * 2);
+			file.write((const char*)buffer[bufferSwitch], bufferByteSize);
 			
 			pthread_mutex_unlock(&bufferMutex[bufferSwitch]);
 			bufferSwitch = (bufferSwitch + 1) % 2;
@@ -434,7 +436,7 @@ void *record2Disk(void* null) {
 			LedCon->updateLed(rotatingRing);
 		}
 
-		header.dataSize = STREAMING_CHANNELS * BUFFER_SAMPLES_PER_CHANNEL * 2 * counter;
+		header.dataSize = bufferByteSize * counter;
 		header.overallSize = header.dataSize + 36;
 		file.seekp(0);
 		file.write((const char*)&header, sizeof(WaveHeader));
@@ -452,7 +454,7 @@ void *record2Remote(void* null)
 		pthread_mutex_lock(&bufferMutex[bufferSwitch]);
 
 		try {
-			tcpConnection->snd(buffer[bufferSwitch], STREAMING_CHANNELS * BUFFER_SAMPLES_PER_CHANNEL * 2);
+			tcpConnection->snd(buffer[bufferSwitch], bufferByteSize);
 			//cout << "sending" << endl;
 		}
 		catch (const libsocket::socket_exception& exc)

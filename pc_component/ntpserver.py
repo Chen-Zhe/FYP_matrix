@@ -261,7 +261,7 @@ class WorkThread(threading.Thread):
     def run(self):
         while self.work:
             try:
-                data,addr,recvTimestamp = self.taskQueue.get()
+                data,addr,recvTimestamp = self.taskQueue.get(timeout=1)
                 recvPacket = NTPPacket()
                 recvPacket.from_data(data)
                 timeStamp_high,timeStamp_low = recvPacket.GetTxTimeStamp()

@@ -6,7 +6,8 @@
     <ProjectGuid>e16fe710-7d03-46db-87f1-e727326ddfa1</ProjectGuid>
     <ProjectHome>
     </ProjectHome>
-    <StartupFile>pc-recorder.py</StartupFile>
+    <StartupFile>
+    </StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -30,7 +31,6 @@
     </Compile>
     <Compile Include="ntpserver.py" />
     <Compile Include="pc-transcript.py" />
-    <Compile Include="pc-recorder.py" />
     <Compile Include="pimatrix.py">
       <SubType>Code</SubType>
     </Compile>

@@ -60,7 +60,7 @@ class deviceManager():
         
         raw_input("Press Enter to continue...")
 
-    def sendCommand(self, command):
+    def sendCommand(self, command, para=''):
         commandKeyword = {
             "shutdown": "T",
             "rec2net": "N",
@@ -77,7 +77,7 @@ class deviceManager():
         
         for pimatrix in self.deviceList:
             try:
-                pimatrix.tcpConnection.send(commandKeyword[command])
+                pimatrix.tcpConnection.send(commandKeyword[command]+para)
                 pimatrix.status = status
 
             except:

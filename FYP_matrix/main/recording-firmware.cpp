@@ -30,7 +30,7 @@ using namespace std;
 
 #define BUFFER_SAMPLES_PER_CHANNEL	16000 //1 second of recording
 #define STREAMING_CHANNELS			8 //Maxmium 8 channels
-const int32_t bufferByteSize = STREAMING_CHANNELS * BUFFER_SAMPLES_PER_CHANNEL * sizeof(int16_t)
+const int32_t bufferByteSize = STREAMING_CHANNELS * BUFFER_SAMPLES_PER_CHANNEL * sizeof(int16_t);
 
 #define HOST_NAME_LENGTH			20 //maximum number of characters for host name
 #define COMMAND_LENGTH				1
@@ -39,7 +39,9 @@ const int32_t bufferByteSize = STREAMING_CHANNELS * BUFFER_SAMPLES_PER_CHANNEL *
 
 void *record2Remote(void* null);
 void *record2Disk(void* null);
-void syncTime(string ip);
+
+void syncTime(string ip, char expectedLastEpochDigit='\0');
+
 void irInterrupt();
 void * motionDetection(void * null);
 void *udpBroadcastReceiver(void *null);
@@ -136,14 +138,14 @@ int main(int argc, char *argv[]) {
 							*status = 'I';
 							recording = false;
 							pthread_join(recorderThread, NULL);
-							LedCon->updateLed();
+							//LedCon->updateLed();
 							break;
 						}
 						case 'N': {
 							*status = 'I';
 							recording = false;
 							pthread_join(recorderThread, NULL);
-							LedCon->updateLed();
+							//LedCon->updateLed();
 							break;
 						}
 					}
@@ -182,7 +184,7 @@ int main(int argc, char *argv[]) {
 }
 
 
-void syncTime(string ip){
+void syncTime(string ip, char expectedLastEpochDigit/*='\0'*/){
 
 	string remoteIP;
 	string remotePort;
@@ -237,7 +239,6 @@ void syncTime(string ip){
 	// ntohl() converts the bit/byte order from the network's to host's "endianness".
 
 	packet.txTm_s = ntohl(packet.txTm_s); // Time-stamp seconds.
-	packet.txTm_f = ntohl(packet.txTm_f); // Time-stamp fraction of a second.
 
 										  // Extract the 32 bits that represent the time-stamp seconds (since NTP epoch) from when the packet left the server.
 										  // Subtract 70 years worth of seconds from the seconds since 1900.
@@ -246,13 +247,24 @@ void syncTime(string ip){
 
 	time_t txTm = (time_t)(packet.txTm_s - NTP_TIMESTAMP_DELTA);
 
-	char command[30];
-	sprintf(command, "sudo date -s '@%d'", txTm);
+	if (expectedLastEpochDigit == '\0') {//sync time only
+		char command[25];
+		sprintf(command, "sudo date -s @%d", txTm);
 
-	if (system(command) == -1)
-		cout << "Unable to set system time" << endl;
-	else
-		cout << "Time synchronised with remote PC" << endl;
+		if (system(command) == -1)
+			cout << "Unable to set system time" << endl;
+		else
+			cout << "Time synchronised with remote PC" << endl;
+	}
+	else {//synchronized start
+		int32_t secondDiff = expectedLastEpochDigit - 48 - txTm % 10;
+		if (secondDiff < 0) secondDiff += 10;
+
+		uint64_t frac64 = (uint64_t) ntohl(packet.txTm_f) * 1000000;
+		uint32_t * frac32 = ((uint32_t*)&frac64) + 1;//easier way to do left shift by 32 bits
+		usleep(secondDiff * 1000000 - *frac32);
+	}
+	
 }
 
 
@@ -337,8 +349,7 @@ void *udpBroadcastReceiver(void *null) {
 	
 }
 
-void *recorder(void* null) {
-	cout << "------ Recording starting ------" << endl;
+void *recorder(void* null) {	
 	uint32_t buffer_switch = 0;
 	//lock down buffer 0 before spawning streaming thread
 	pthread_mutex_lock(&bufferMutex[buffer_switch]);
@@ -348,6 +359,13 @@ void *recorder(void* null) {
 	case 'N':pthread_create(&workerThread, NULL, record2Remote, NULL); break;
 	case 'L':pthread_create(&workerThread, NULL, record2Disk, NULL); break;
 	}
+
+	if (pcConnected) {
+		char digit;
+		tcpConnection->rcv(&digit, 1, MSG_WAITALL);
+		syncTime(tcpConnection->gethost(), digit);
+	}
+	cout << "------ Recording starting ------" << endl;
 
 	while (recording) {
 		int32_t step = 0;
@@ -450,7 +468,12 @@ void *record2Disk(void* null) {
 void *record2Remote(void* null)
 {
 	uint32_t bufferSwitch = 0;
-	while (true) {
+	matrixCreator::EverloopImage rotatingRing;
+
+	rotatingRing.leds[17].red = 5;
+	LedCon->updateLed(rotatingRing);
+
+	while (recording) {
 		pthread_mutex_lock(&bufferMutex[bufferSwitch]);
 
 		try {
@@ -460,16 +483,27 @@ void *record2Remote(void* null)
 		catch (const libsocket::socket_exception& exc)
 		{
 			//network disconnection means recording completed
+			recording = false; //set flag
+			*status = 'I';
+			pthread_mutex_unlock(&bufferMutex[bufferSwitch]);//unlock mutex
 			break;
 		}
 
+		
 		pthread_mutex_unlock(&bufferMutex[bufferSwitch]);
 		//cout << "Buffer " << bufferSwitch << " Sent" << endl;
 		bufferSwitch = (bufferSwitch + 1) % 2;
-	}
 
-	recording = false; //set flag
-	*status = 'I';
-	pthread_mutex_unlock(&bufferMutex[bufferSwitch]);//unlock mutex
+		if (bufferSwitch) {
+			rotatingRing.leds[0].red = 5;
+			rotatingRing.leds[17].red = 0;
+		}
+		else {
+			rotatingRing.leds[17].red = 5;
+			rotatingRing.leds[0].red = 0;
+		}
+		LedCon->updateLed(rotatingRing);
+	}
+		
 	pthread_exit(NULL);//terminate itself
 }

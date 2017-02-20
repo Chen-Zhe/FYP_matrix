@@ -40,7 +40,7 @@ const int32_t bufferByteSize = STREAMING_CHANNELS * BUFFER_SAMPLES_PER_CHANNEL *
 void *record2Remote(void* null);
 void *record2Disk(void* null);
 
-uint32_t syncTime(string ip, char expectedLastEpochDigit='\0');
+int32_t syncTime(string ip, char expectedLastEpochDigit='\0');
 
 void irInterrupt();
 void * motionDetection(void * null);
@@ -348,7 +348,7 @@ void *udpBroadcastReceiver(void *null) {
 
 void *recorder(void* null) {	
 	int32_t buffer_switch = 0;
-	int32_t writeInitAlign = 0;
+	int32_t writeInitDiscard = 0;
 	//lock down buffer 0 before spawning streaming thread
 	pthread_mutex_lock(&bufferMutex[buffer_switch]);
 
@@ -364,36 +364,50 @@ void *recorder(void* null) {
 		int32_t samplesToWait;
 		tcpConnection->rcv(&digit, 1, MSG_WAITALL);
 		microphoneArray.Read();
-		samplesToWait = (float)syncTime(tcpConnection->gethost(), digit)*0.16;
-		while (microphoneArray.NumberOfSamples() < samplesToWait) {
+		samplesToWait = (float)syncTime(tcpConnection->gethost(), digit)*0.016;
+		while (samplesToWait > 128) {
 			microphoneArray.Read();
-			samplesToWait -= microphoneArray.NumberOfSamples();
+			samplesToWait -= 128;
 		}
-		writeInitAlign = samplesToWait;
+		//one more read to go
+		writeInitDiscard = samplesToWait;
+		microphoneArray.Read();
 	}
 	cout << "------ Recording starting ------" << endl;
 
 	while (recording) {
-
-
-
 		int32_t step = 0;
-		while (step < BUFFER_SAMPLES_PER_CHANNEL) {
+		bool bufferFull = false;
 
-			/* The reading process is a blocking process that read in 8*128 samples every 8ms */
-			microphoneArray.Read();
+		//fill the first partial buffer
+		for (int32_t s = writeInitDiscard; s < 128; s++) {
+			for (int32_t c = 0; c < STREAMING_CHANNELS; c++) {
+				buffer[buffer_switch][step][c] = microphoneArray.At(s, c);
+			}
+			step++;
+		}
 
-			for (int32_t s = 0; s < microphoneArray.NumberOfSamples(); s++) {
+		while (!bufferFull) {
+			int32_t s = 0;
+			
+			microphoneArray.Read(); //The reading process is a blocking process that read in 8*128 samples every 8ms
+
+			for (s = 0; s < 128; s++) {
 				for (int32_t c = 0; c < STREAMING_CHANNELS; c++) {
 					buffer[buffer_switch][step][c] = microphoneArray.At(s, c);
 				}
 				step++;
+				if (step == BUFFER_SAMPLES_PER_CHANNEL) {
+					bufferFull = true;
+					break;
+				}
 			}
 		}
 		pthread_mutex_lock(&bufferMutex[(buffer_switch + 1) % 2]);
 		pthread_mutex_unlock(&bufferMutex[buffer_switch]);
 		buffer_switch = (buffer_switch + 1) % 2;
 	}
+
 	pthread_mutex_unlock(&bufferMutex[buffer_switch]);
 	pthread_join(workerThread, NULL);
 	cout << "------ Recording ended ------" << endl;

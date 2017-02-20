@@ -65,7 +65,6 @@
     <ClCompile Include="doa\CSVD.cpp" />
     <ClCompile Include="doa\Doa.cpp" />
     <ClCompile Include="doa\DoaFuncs.cpp" />
-    <ClCompile Include="main\recording-firmware.cpp" />
     <ClCompile Include="main\VAD-recognition.cpp" />
     <ClCompile Include="matrix-hal\dummy_sensor.cpp" />
     <ClCompile Include="matrix-hal\everloop.cpp" />

@@ -49,6 +49,7 @@ void *StreamingSpeechRecognition(void *null);
 void syncTime(string ip);
 
 int16_t originalBuffer[3][NUM_CHANNELS][SHIFT_SIZE];
+int16_t emptyBuffer[SHIFT_SIZE] = { 0 };
 
 typedef std::unique_ptr<grpc::ClientReaderWriter<StreamingRecognizeRequest,StreamingRecognizeResponse>> RecognitionDataStreamer;
 
@@ -128,7 +129,7 @@ int main() {
 
 			microphoneArray.Read();
 
-			for (int32_t s = 0; s < microphoneArray.NumberOfSamples(); s++) {
+			for (int32_t s = 0; s < 128; s++) {
 				for (int32_t c = 0; c < NUM_CHANNELS; c++) {
 					originalBuffer[buffer_switch][c][step] = microphoneArray.At(s, c);
 				}
@@ -215,12 +216,32 @@ void *SpeechRecognition(void *null) {
 	bool streamStarted = false;
 	const size_t dataChunkSize = SHIFT_SIZE * sizeof(int16_t);
 
-	int32_t speechSegmentId = 1;
+	std::ofstream wholeRec("/home/pi/Recordings/whole_session.wav", std::ofstream::binary);
+	// WAVE file header format
+	struct WaveHeader {
+		//RIFF chunk
+		char RIFF[4] = { 'R', 'I', 'F', 'F' };
+		uint32_t overallSize;						// overall size of file in bytes
+		char WAVE[4] = { 'W', 'A', 'V', 'E' };		// WAVE string
 
-	std::string segmentFilePathPrefix = "/home/pi/Recordings/sseg_";
-	std::ofstream *speechSegmentFile;
-	std::ofstream wholeRec("session", std::ofstream::binary);
+													//fmt subchunk
+		char fmt[4] = { 'f', 'm', 't', ' ' };		// fmt string with trailing null char
+		uint32_t fmtLength = 16;					// length of the format data
+		uint16_t audioFormat = 1;					// format type. 1-PCM, 3- IEEE float, 6 - 8bit A law, 7 - 8bit mu law
+		uint16_t numChannels = 1;					// no.of channels
+		uint32_t samplingRate = 16000;				// sampling rate (blocks per second)
+		uint32_t byteRate = 32000;					// SampleRate * NumChannels * BitsPerSample/8
+		uint16_t blockAlign = 2;					// NumChannels * BitsPerSample/8
+		uint16_t bitsPerSample = 16;				// bits per sample, 8- 8bits, 16- 16 bits etc
 
+													//data subchunk
+		char data[4] = { 'd', 'a', 't', 'a' };		// DATA string or FLLR string
+		uint32_t dataSize;							// NumSamples * NumChannels * BitsPerSample/8 - size of the next chunk that will be read
+	} header;
+
+	wholeRec.write((const char*)&header, sizeof(WaveHeader));
+	
+	uint32_t counter = 0;
 
 	int32_t shiftVadStatus;
 
@@ -262,7 +283,10 @@ void *SpeechRecognition(void *null) {
 	//------Speech Recognition thread------
 	while (running) {
 		mq_receive(fromVad, (char*)&shiftVadStatus, 4, NULL); //blocking
-		wholeRec.write((const char*)originalBuffer[bufferSwitch][0], SHIFT_SIZE * sizeof(int16_t));
+		counter++;
+
+		if (shiftVadStatus == 0)
+			wholeRec.write((const char*)emptyBuffer, SHIFT_SIZE * sizeof(int16_t));
 
 		if (shiftVadStatus > 0) {
 
@@ -271,17 +295,12 @@ void *SpeechRecognition(void *null) {
 				streamer->Write(configRequest);
 
 				//supposed to be -1, but due to c's implementation of modulo operation, it has to be +2
-				
-				speechSegmentFile = new std::ofstream(segmentFilePathPrefix + std::to_string(speechSegmentId) + ".pcm", std::ofstream::binary);
-				speechSegmentId++;
-				speechSegmentFile->write((const char*)originalBuffer[(bufferSwitch + 2) % 3][0], SHIFT_SIZE * sizeof(int16_t));
-
+				wholeRec.write((const char*)originalBuffer[(bufferSwitch + 2) % 3][0], SHIFT_SIZE * sizeof(int16_t));
 				streamingRequest.set_audio_content((void *)originalBuffer[(bufferSwitch + 2) % 3][0], dataChunkSize);
 				streamer->Write(streamingRequest);
 			}
 
-			speechSegmentFile->write((const char*)originalBuffer[bufferSwitch][0], SHIFT_SIZE * sizeof(int16_t));
-
+			wholeRec.write((const char*)originalBuffer[bufferSwitch][0], SHIFT_SIZE * sizeof(int16_t));
 			streamingRequest.set_audio_content((void *)originalBuffer[bufferSwitch][0], dataChunkSize);
 			streamer->Write(streamingRequest);
 		}
@@ -302,14 +321,17 @@ void *SpeechRecognition(void *null) {
 			mq_send(toRecognition, (char*)&streamer, 4, 0);
 			mq_send(toRecognition, (char*)context, 4, 0);
 
-			speechSegmentFile->close();
-			delete speechSegmentFile;
-
 			streamStarted = false;
 		}
 
 		bufferSwitch = (bufferSwitch + 1) % 3;
 	}
+
+	header.dataSize = 32000 * counter;
+	header.overallSize = header.dataSize + 36;
+	wholeRec.seekp(0);
+	wholeRec.write((const char*)&header, sizeof(WaveHeader));
+	wholeRec.close();
 	pthread_exit(NULL);
 }
 
@@ -319,7 +341,7 @@ void *StreamingSpeechRecognition(void *null) {
 	grpc::ClientContext *context;
 	mqd_t fromEnhancer = mq_open(ENC_RCO_Q, O_RDONLY);
 
-	while(true){
+	while(running){
 		mq_receive(fromEnhancer, (char*)&streamer, 4, NULL);
 		mq_receive(fromEnhancer, (char*)&context, 4, NULL);
 

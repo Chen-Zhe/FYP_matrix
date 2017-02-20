@@ -332,6 +332,8 @@ void *SpeechRecognition(void *null) {
 	wholeRec.seekp(0);
 	wholeRec.write((const char*)&header, sizeof(WaveHeader));
 	wholeRec.close();
+	streamer->WritesDone();
+	pthread_join(RCO, NULL);
 	pthread_exit(NULL);
 }
 

@@ -13,7 +13,7 @@ class DisplayTranscript(threading.Thread):
     def run(self):
         utterance = 1
         text_file = open("transcript.txt", "w")
-        self.connection.connect(("192.168.0.101", 8000))
+        self.connection.connect(("192.168.1.100", 8000))
 
         print "connection established, printing transcript\n"
 

@@ -40,7 +40,7 @@ const int32_t bufferByteSize = STREAMING_CHANNELS * BUFFER_SAMPLES_PER_CHANNEL *
 void *record2Remote(void* null);
 void *record2Disk(void* null);
 
-void syncTime(string ip, char expectedLastEpochDigit='\0');
+uint32_t syncTime(string ip, char expectedLastEpochDigit='\0');
 
 void irInterrupt();
 void * motionDetection(void * null);
@@ -184,7 +184,7 @@ int main(int argc, char *argv[]) {
 }
 
 
-void syncTime(string ip, char expectedLastEpochDigit/*='\0'*/){
+int32_t syncTime(string ip, char expectedLastEpochDigit/*='\0'*/){
 
 	string remoteIP;
 	string remotePort;
@@ -251,18 +251,15 @@ void syncTime(string ip, char expectedLastEpochDigit/*='\0'*/){
 		char command[25];
 		sprintf(command, "sudo date -s @%d", txTm);
 
-		if (system(command) == -1)
-			cout << "Unable to set system time" << endl;
-		else
-			cout << "Time synchronised with remote PC" << endl;
+		return system(command);
 	}
-	else {//synchronized start
+	else {//calculate microseconds till start
 		int32_t secondDiff = expectedLastEpochDigit - 48 - txTm % 10;
 		if (secondDiff < 0) secondDiff += 10;
 
 		uint64_t frac64 = (uint64_t) ntohl(packet.txTm_f) * 1000000;
 		uint32_t * frac32 = ((uint32_t*)&frac64) + 1;//easier way to do left shift by 32 bits
-		usleep(secondDiff * 1000000 - *frac32);
+		return secondDiff * 1000000 - *frac32;
 	}
 	
 }
@@ -350,7 +347,8 @@ void *udpBroadcastReceiver(void *null) {
 }
 
 void *recorder(void* null) {	
-	uint32_t buffer_switch = 0;
+	int32_t buffer_switch = 0;
+	int32_t writeInitAlign = 0;
 	//lock down buffer 0 before spawning streaming thread
 	pthread_mutex_lock(&bufferMutex[buffer_switch]);
 
@@ -360,14 +358,20 @@ void *recorder(void* null) {
 	case 'L':pthread_create(&workerThread, NULL, record2Disk, NULL); break;
 	}
 
+
 	if (pcConnected) {
 		char digit;
+		int32_t j;
 		tcpConnection->rcv(&digit, 1, MSG_WAITALL);
+		microphoneArray.Read();
 		syncTime(tcpConnection->gethost(), digit);
 	}
 	cout << "------ Recording starting ------" << endl;
 
 	while (recording) {
+
+
+
 		int32_t step = 0;
 		while (step < BUFFER_SAMPLES_PER_CHANNEL) {
 

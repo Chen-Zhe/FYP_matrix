@@ -109,6 +109,9 @@
     <ClCompile Include="main\VAD-recognition.cpp">
       <Filter>main</Filter>
     </ClCompile>
+    <ClCompile Include="main\recording-firmware.cpp">
+      <Filter>main</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="main">

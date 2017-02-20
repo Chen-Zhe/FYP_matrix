@@ -219,6 +219,8 @@ void *SpeechRecognition(void *null) {
 
 	std::string segmentFilePathPrefix = "/home/pi/Recordings/sseg_";
 	std::ofstream *speechSegmentFile;
+	std::ofstream wholeRec("session", std::ofstream::binary);
+
 
 	int32_t shiftVadStatus;
 
@@ -260,6 +262,7 @@ void *SpeechRecognition(void *null) {
 	//------Speech Recognition thread------
 	while (running) {
 		mq_receive(fromVad, (char*)&shiftVadStatus, 4, NULL); //blocking
+		wholeRec.write((const char*)originalBuffer[bufferSwitch][0], SHIFT_SIZE * sizeof(int16_t));
 
 		if (shiftVadStatus > 0) {
 

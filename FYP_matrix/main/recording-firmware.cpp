@@ -361,10 +361,15 @@ void *recorder(void* null) {
 
 	if (pcConnected) {
 		char digit;
-		int32_t j;
+		int32_t samplesToWait;
 		tcpConnection->rcv(&digit, 1, MSG_WAITALL);
 		microphoneArray.Read();
-		syncTime(tcpConnection->gethost(), digit);
+		samplesToWait = (float)syncTime(tcpConnection->gethost(), digit)*0.16;
+		while (microphoneArray.NumberOfSamples() < samplesToWait) {
+			microphoneArray.Read();
+			samplesToWait -= microphoneArray.NumberOfSamples();
+		}
+		writeInitAlign = samplesToWait;
 	}
 	cout << "------ Recording starting ------" << endl;
 

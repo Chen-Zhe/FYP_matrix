@@ -262,7 +262,7 @@ int32_t syncTime(string ip, char expectedLastEpochDigit/*='\0'*/){
 		if (secondDiff < 0) secondDiff += 10;
 
 		uint64_t frac64 = (uint64_t) ntohl(packet.txTm_f) * 1000000;
-		uint32_t * frac32 = ((uint32_t*)&frac64) + 1;//easier way to do left shift by 32 bits
+		uint32_t * frac32 = ((uint32_t*)&frac64) + 1;//easier way to do right shift by 32 bits
 		return secondDiff * 1000000 - *frac32;
 	}
 	

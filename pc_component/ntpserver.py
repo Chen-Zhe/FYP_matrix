@@ -1,22 +1,17 @@
 import datetime
 import socket
 import struct
-import time
 import Queue
 import mutex
 import threading
 import select
+import calendar
 
-def system_to_ntp_time(timestamp):
-    """Convert a system time to a NTP time.
+def _ntpInt(datetimeObj):
+    return calendar.timegm(datetimeObj.timetuple()) + NTP.NTP_DELTA
 
-    Parameters:
-    timestamp -- timestamp in system time
-
-    Returns:
-    corresponding NTP time
-    """
-    return timestamp + NTP.NTP_DELTA
+def _ntpFrac(datetimeObj):
+    return int((datetimeObj.microsecond<<32)/1000000)
 
 def _to_int(timestamp):
     """Return the integral part of a timestamp.
@@ -39,7 +34,7 @@ def _to_frac(timestamp, n=32):
     Retuns:
     fractional part
     """
-    return int(abs(timestamp - _to_int(timestamp)) * 2**n)
+    return int(abs(timestamp - _to_int(timestamp)) << n)
 
 def _to_time(integ, frac, n=32):
     """Return a timestamp from an integral and fractional part.
@@ -62,11 +57,7 @@ class NTPException(Exception):
 class NTP:
     """Helper class defining constants."""
 
-    _SYSTEM_EPOCH = datetime.date(*time.gmtime(0)[0:3])
-    """system epoch"""
-    _NTP_EPOCH = datetime.date(1900, 1, 1)
-    """NTP epoch"""
-    NTP_DELTA = (_SYSTEM_EPOCH - _NTP_EPOCH).days * 24 * 3600
+    NTP_DELTA = 2208988800
     """delta between system and NTP time"""
 
     REF_ID_TABLE = {
@@ -176,15 +167,15 @@ class NTPPacket:
                 _to_int(self.root_dispersion) << 16 |
                 _to_frac(self.root_dispersion, 16),
                 self.ref_id,
-                _to_int(self.ref_timestamp),
-                _to_frac(self.ref_timestamp),
+                _ntpInt(self.ref_timestamp),
+                _ntpFrac(self.ref_timestamp),
                 #Change by lichen, avoid loss of precision
                 self.orig_timestamp_high,
                 self.orig_timestamp_low,
-                _to_int(self.recv_timestamp),
-                _to_frac(self.recv_timestamp),
-                _to_int(self.tx_timestamp),
-                _to_frac(self.tx_timestamp))
+                _ntpInt(self.recv_timestamp),
+                _ntpFrac(self.recv_timestamp),
+                _ntpInt(self.tx_timestamp),
+                _ntpFrac(self.tx_timestamp))
         except struct.error:
             raise NTPException("Invalid NTP packet fields.")
         return packed
@@ -246,7 +237,7 @@ class RecvThread(threading.Thread):
                 for tempSocket in rlist:
                     try:
                         data,addr = tempSocket.recvfrom(1024)
-                        recvTimestamp = recvTimestamp = system_to_ntp_time(time.time())
+                        recvTimestamp = datetime.datetime.utcnow()
                         self.taskQueue.put((data,addr,recvTimestamp))
                     except socket.error,msg:
                         print msg;
@@ -274,10 +265,10 @@ class WorkThread(threading.Thread):
                 sendPacket.root_dispersion = 0x0aa7
                 sendPacket.ref_id = 0x808a8c2c
                 '''
-                sendPacket.ref_timestamp = recvTimestamp-5
+                sendPacket.ref_timestamp = recvTimestamp-datetime.timedelta(seconds=5)
                 sendPacket.SetOriginTimeStamp(timeStamp_high,timeStamp_low)
                 sendPacket.recv_timestamp = recvTimestamp
-                sendPacket.tx_timestamp = system_to_ntp_time(time.time())
+                sendPacket.tx_timestamp = datetime.datetime.utcnow()
                 self.socket.sendto(sendPacket.to_data(),addr)
                 #print "Sended to %s:%d" % (addr[0],addr[1])
             except Queue.Empty:

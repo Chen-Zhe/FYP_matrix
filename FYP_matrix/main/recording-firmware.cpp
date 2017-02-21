@@ -135,25 +135,22 @@ int main(int argc, char *argv[]) {
 					break;
 				}
 
-				case 'S': { //stop everything
+				case 'I': { //stop everything
+					*status = 'I';
 
 					switch (*status) {
+						case 'I': break;
 						case 'L': {
-							*status = 'I';
 							recording = false;
 							pthread_join(recorderThread, NULL);
-							//LedCon->updateLed();
 							break;
 						}
 						case 'N': {
-							*status = 'I';
 							recording = false;
 							pthread_join(recorderThread, NULL);
-							//LedCon->updateLed();
 							break;
 						}
 					}
-
 					
 					break;
 				}

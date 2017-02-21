@@ -58,22 +58,18 @@ class deviceManager():
         else:
             print "No devices found"
         
-        raw_input("Press Enter to continue...")
 
     def sendCommand(self, command, para=''):
         commandKeyword = {
             "shutdown": "T",
             "rec2net": "N",
             "rec2sd": "L",
-            "stop": "S"
+            "lvcsr":"S",
+            "stop": "I"
             }
         
-        if command == 'stop':
-            status = "I"
-            self.deviceBusy = False
-        else:
-            status = commandKeyword[command]
-            self.deviceBusy = True
+        status = commandKeyword[command]
+        self.deviceBusy = (not status == "I")
         
         for pimatrix in self.deviceList:
             try:

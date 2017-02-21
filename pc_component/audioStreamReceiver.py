@@ -1,7 +1,5 @@
 import wave
 import threading
-import pimatrix
-import time
 
 class RecordingStream(threading.Thread):
     def __init__(self, device, dateAndTime):

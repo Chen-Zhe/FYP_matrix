@@ -34,21 +34,6 @@
     <ClCompile Include="matrix-hal\mcu_firmware.cpp">
       <Filter>Library\Matrix-HAL</Filter>
     </ClCompile>
-    <ClCompile Include="doa\CFFTW.cpp">
-      <Filter>Library\DOA</Filter>
-    </ClCompile>
-    <ClCompile Include="doa\CGccPhat.cpp">
-      <Filter>Library\DOA</Filter>
-    </ClCompile>
-    <ClCompile Include="doa\CSVD.cpp">
-      <Filter>Library\DOA</Filter>
-    </ClCompile>
-    <ClCompile Include="doa\Doa.cpp">
-      <Filter>Library\DOA</Filter>
-    </ClCompile>
-    <ClCompile Include="doa\DoaFuncs.cpp">
-      <Filter>Library\DOA</Filter>
-    </ClCompile>
     <ClCompile Include="webrtc-vad\vad\vad_core.c">
       <Filter>Library\WebRTC-VAD</Filter>
     </ClCompile>
@@ -109,6 +94,9 @@
     <ClCompile Include="main\recording-firmware.cpp">
       <Filter>main</Filter>
     </ClCompile>
+    <ClCompile Include="main\integrated-VAD-google-speech.cpp">
+      <Filter>main</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="main">
@@ -116,9 +104,6 @@
     </Filter>
     <Filter Include="Library">
       <UniqueIdentifier>{11fcf399-230a-47c0-af3f-d621c818b1bd}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Library\DOA">
-      <UniqueIdentifier>{97c9385e-857a-42d3-8032-5e144451b60d}</UniqueIdentifier>
     </Filter>
     <Filter Include="Library\Matrix-HAL">
       <UniqueIdentifier>{e19c8111-e836-4f82-9421-d9a9923328c9}</UniqueIdentifier>
@@ -193,27 +178,6 @@
     </ClInclude>
     <ClInclude Include="matrix-hal\cpp\driver\microphone_array_location.h">
       <Filter>Library\Matrix-HAL</Filter>
-    </ClInclude>
-    <ClInclude Include="doa\CFFTW.h">
-      <Filter>Library\DOA</Filter>
-    </ClInclude>
-    <ClInclude Include="doa\CGccPhat.h">
-      <Filter>Library\DOA</Filter>
-    </ClInclude>
-    <ClInclude Include="doa\Doa.h">
-      <Filter>Library\DOA</Filter>
-    </ClInclude>
-    <ClInclude Include="doa\DoaFuncs.h">
-      <Filter>Library\DOA</Filter>
-    </ClInclude>
-    <ClInclude Include="doa\nr3.h">
-      <Filter>Library\DOA</Filter>
-    </ClInclude>
-    <ClInclude Include="doa\svd.h">
-      <Filter>Library\DOA</Filter>
-    </ClInclude>
-    <ClInclude Include="doa\DoaOutput.h">
-      <Filter>Library\DOA</Filter>
     </ClInclude>
     <ClInclude Include="webrtc-vad\typedefs.h">
       <Filter>Library\WebRTC-VAD</Filter>

@@ -7,11 +7,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MatrixCreator", "FYP_matrix
 EndProject
 Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "PcComponent", "pc_component\PcComponent.pyproj", "{E16FE710-7D03-46DB-87F1-E727326DDFA1}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{C6A44A9B-0FB4-4A31-92DC-12B57B7CBFF3}"
-	ProjectSection(SolutionItems) = preProject
-		README.md = README.md
-	EndProjectSection
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

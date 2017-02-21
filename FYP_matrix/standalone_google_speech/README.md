@@ -1,0 +1,1 @@
+Preserved code for standalone gRPC-based Google speech transcriber with VAD and its corresponding transcript receiver

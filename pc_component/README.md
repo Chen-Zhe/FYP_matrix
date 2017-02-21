@@ -1,0 +1,1 @@
+Python2.7-based remote PC management console. Featuring automatic device discovery and all control functions

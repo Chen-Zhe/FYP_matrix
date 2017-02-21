@@ -60,11 +60,7 @@
     </RemotePostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="doa\CFFTW.cpp" />
-    <ClCompile Include="doa\CGccPhat.cpp" />
-    <ClCompile Include="doa\CSVD.cpp" />
-    <ClCompile Include="doa\Doa.cpp" />
-    <ClCompile Include="doa\DoaFuncs.cpp" />
+    <ClCompile Include="main\integrated-VAD-google-speech.cpp" />
     <ClCompile Include="main\recording-firmware.cpp" />
     <ClCompile Include="matrix-hal\dummy_sensor.cpp" />
     <ClCompile Include="matrix-hal\everloop.cpp" />
@@ -98,13 +94,6 @@
     <ClCompile Include="webrtc-vad\vad\webrtc_vad.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="doa\CFFTW.h" />
-    <ClInclude Include="doa\CGccPhat.h" />
-    <ClInclude Include="doa\Doa.h" />
-    <ClInclude Include="doa\DoaFuncs.h" />
-    <ClInclude Include="doa\DoaOutput.h" />
-    <ClInclude Include="doa\nr3.h" />
-    <ClInclude Include="doa\svd.h" />
     <ClInclude Include="main\LedController.h" />
     <ClInclude Include="matrix-hal\cpp\driver\circular_queue.h" />
     <ClInclude Include="matrix-hal\cpp\driver\creator_memory_map.h" />

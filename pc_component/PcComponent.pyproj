@@ -30,13 +30,13 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="ntpserver.py" />
-    <Compile Include="pc-transcript.py" />
     <Compile Include="pimatrix.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="recordingStream.py">
+    <Compile Include="audioStreamReceiver.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="transcriptReceiver.py" />
   </ItemGroup>
   <ItemGroup>
     <InterpreterReference Include="{9a7a9026-48c1-4688-9d5d-e5699d47d074}\2.7" />

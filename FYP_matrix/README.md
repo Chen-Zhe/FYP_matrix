@@ -1,0 +1,1 @@
+Codebase of Raspberry Pi + Matrix Creator development firmware for FYP

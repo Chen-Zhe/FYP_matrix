@@ -1,7 +1,8 @@
 import threading
-import recordingStream
+import audioStreamReceiver
 import pimatrix
 import time
+import transcriptReceiver
 from ntpserver import ntpServer
 
 deviceMan = pimatrix.deviceManager()
@@ -32,16 +33,18 @@ while(True):
     if choice == 1:
         print "Scanning......"
         deviceMan.discoverDevices()
-        deviceMan.tabulateDevice()        
+        deviceMan.tabulateDevice()
+        raw_input("Press Enter to continue...")     
     
     elif choice == 2:
         deviceMan.tabulateDevice()
+        raw_input("Press Enter to continue...")
 
     elif choice == 3:
         
         currentDateAndTime = time.strftime("%Y%m%d_%H%M%S", time.localtime())
 
-        streamerList = [recordingStream.RecordingStream(device, currentDateAndTime) for device in deviceMan.deviceList]
+        streamerList = [audioStreamReceiver.RecordingStream(device, currentDateAndTime) for device in deviceMan.deviceList]
         for streamer in streamerList:
             streamer.start()
         digit = chr(((ord(time.strftime("%S", time.localtime())[1])-48)+3)%10+48)
@@ -52,15 +55,28 @@ while(True):
             streamer.continue_recording = False
         
         deviceMan.sendCommand("stop")
-        print("stopping......")
-        time.sleep(1)
+        print "stopping......"
+        for streamer in streamerList:
+            streamer.join()
 
     elif choice == 4:
         digit = chr(((ord(time.strftime("%S", time.localtime())[1])-48)+3)%10+48)
         deviceMan.sendCommand("rec2sd", digit)
 
     elif choice == 5:
-        pass
+        deviceMan.tabulateDevice()
+        sel = input("Select one device to do LVCSR (1-"+ str(deviceMan.numDevices) +": ")
+        if choice<1 or choice>deviceMan.numDevices:
+            raw_input("Invalid choice, press Enter to continue...")
+            
+        transcriber = transcriptReceiver.TranscriptReceiver(deviceMan.deviceList[sel-1])
+        transcriber.start()
+
+        raw_input("Press Enter to stop transcribing...")
+        transcriber.keep_alive = False
+        deviceMan.sendCommand("stop")
+        print "stopping..."
+        transcriber.join()
     
     elif choice == 8:
         deviceMan.sendCommand("stop")

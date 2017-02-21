@@ -38,12 +38,13 @@ while(True):
         deviceMan.tabulateDevice()
 
     elif choice == 3:
-        digit = chr(((ord(time.strftime("%S", time.localtime())[1])-48)+3)%10+48)
+        
         currentDateAndTime = time.strftime("%Y%m%d_%H%M%S", time.localtime())
 
         streamerList = [recordingStream.RecordingStream(device, currentDateAndTime) for device in deviceMan.deviceList]
         for streamer in streamerList:
             streamer.start()
+        digit = chr(((ord(time.strftime("%S", time.localtime())[1])-48)+3)%10+48)
         deviceMan.sendCommand("rec2net", digit)
                 
         raw_input("Press Enter to stop recording...")

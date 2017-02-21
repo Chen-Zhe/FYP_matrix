@@ -64,6 +64,8 @@ unique_ptr<libsocket::inet_stream> tcpConnection;
 char* status = &sysInfo[0];
 char* hostname = &sysInfo[1];
 
+char commandArgument;
+
 int main(int argc, char *argv[]) {
 
 	gethostname(hostname, HOST_NAME_LENGTH);
@@ -117,6 +119,7 @@ int main(int argc, char *argv[]) {
 					if (*status == 'I') {
 						*status = 'N';
 						recording = true;
+						tcpConnection->rcv(&commandArgument, 1, MSG_WAITALL);
 						pthread_create(&recorderThread, NULL, recorder, NULL);
 						break;
 					}
@@ -125,6 +128,7 @@ int main(int argc, char *argv[]) {
 					if (*status == 'I') {
 						*status = 'L';
 						recording = true;
+						tcpConnection->rcv(&commandArgument, 1, MSG_WAITALL);
 						pthread_create(&recorderThread, NULL, recorder, NULL);
 					}
 
@@ -360,11 +364,10 @@ void *recorder(void* null) {
 
 
 	if (pcConnected) {
-		char digit;
 		int32_t samplesToWait;
-		tcpConnection->rcv(&digit, 1, MSG_WAITALL);
 		microphoneArray.Read();
-		samplesToWait = (float)syncTime(tcpConnection->gethost(), digit)*0.016;
+		samplesToWait = (float)syncTime(tcpConnection->gethost(), commandArgument)*0.016;
+		cout << samplesToWait << endl;
 		while (samplesToWait > 128) {
 			microphoneArray.Read();
 			samplesToWait -= 128;

@@ -373,11 +373,11 @@ void *recorder(void* null) {
 			samplesToWait -= 128;
 		}
 		//one more read to go
-		writeInitDiscard = samplesToWait;
-		microphoneArray.Read();
+		writeInitDiscard = samplesToWait;		
 	}
 	cout << "------ Recording starting ------" << endl;
 
+	microphoneArray.Read();
 	while (recording) {
 		int32_t step = 0;
 		bool bufferFull = false;

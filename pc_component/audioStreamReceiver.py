@@ -10,7 +10,7 @@ class RecordingStream(threading.Thread):
         self.dateAndTime = dateAndTime
 
     def run(self):
-        print self.device.hostname, "streaming starting"
+        print "Receiving from "+self.device.hostname+"..."
         filename = self.device.hostname+"_"+self.dateAndTime+"_8ch.wav"
         out_sound = wave.open(filename, 'wb')
         # (num of channels, sampling width in bytes, sampling rate, num of frames, compression type, compression name)
@@ -42,4 +42,4 @@ class RecordingStream(threading.Thread):
 
         out_sound.close()
 
-        print self.device.hostname, "streamed for", str(self.seconds_recorded//60), "minutes", str(self.seconds_recorded%60), "seconds"
+        print self.device.hostname+" streamed for "+str(self.seconds_recorded//60)+" minutes "+str(self.seconds_recorded%60), "seconds"

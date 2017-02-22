@@ -3,9 +3,10 @@ import audioStreamReceiver
 import pimatrix
 import time
 import transcriptReceiver
-from ntpserver import ntpServer
+from timeServer import TimeServer
 
 deviceMan = pimatrix.deviceManager()
+winPerfTimer = TimeServer()
 
 def printMenu():
     print "\n"
@@ -45,20 +46,20 @@ while(True):
         streamerList = [audioStreamReceiver.RecordingStream(device, currentDateAndTime) for device in deviceMan.deviceList]
         for streamer in streamerList:
             streamer.start()
-        digit = chr(((ord(time.strftime("%S", time.localtime())[1])-48)+3)%10+48)
+        digit = chr((int(time.clock())+2)%10+48)
         deviceMan.sendCommand("rec2net", digit)
-                
+
         raw_input("Press Enter to stop recording...")
         for streamer in streamerList:
             streamer.continue_recording = False
-        
+
         deviceMan.sendCommand("stop")
         print "stopping......"
         for streamer in streamerList:
             streamer.join()
 
     elif choice == 4:
-        digit = chr(((ord(time.strftime("%S", time.localtime())[1])-48)+3)%10+48)
+        digit = chr((int(time.clock())+2)%10+48)
         deviceMan.sendCommand("rec2sd", digit)
 
     elif choice == 5:
@@ -94,3 +95,4 @@ while(True):
 
 print "Thank you for using Pi-Matrix Management Console"
 print "Have a nice day!"
+winPerfTimer.stop()

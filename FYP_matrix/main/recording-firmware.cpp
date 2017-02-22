@@ -184,7 +184,7 @@ int main(int argc, char *argv[]) {
 	return 0;
 }
 
-int32_t syncTime() {
+inline int32_t syncTime() {
 	uint32_t currentEpochTime;
 	tcpConnection->rcv(&currentEpochTime, 4);
 	char command[25];
@@ -192,18 +192,6 @@ int32_t syncTime() {
 	cout << "Sys time synced with remote PC: " << flush;;
 	return system(command);
 }
-
-/*
-	else {//calculate microseconds till start
-		int32_t secondDiff = expectedLastEpochDigit - 48 - txTm % 10;
-		if (secondDiff < 0) secondDiff += 10;
-
-		uint64_t frac64 = (uint64_t) ntohl(packet.txTm_f) * 1000000;
-		uint32_t * frac32 = ((uint32_t*)&frac64) + 1;//easier way to do right shift by 32 bits
-		return secondDiff * 1000000 - *frac32;
-	}
-
-	*/
 
 int irPulseCount = 0;
 
@@ -259,7 +247,7 @@ void *udpBroadcastReceiver(void *null) {
 	buffer.resize(32);
 	
 	//start server
-	libsocket::inet_dgram_server udpServer("0.0.0.0", "8001", LIBSOCKET_IPv4);	
+	libsocket::inet_dgram_server udpServer("0.0.0.0", "8001", LIBSOCKET_IPv4);
 	cout << hostname << " - UDP server listening :8001\n";
 
 	while (true) {
@@ -286,6 +274,25 @@ void *udpBroadcastReceiver(void *null) {
 	
 }
 
+inline double syncRecording(char expectedSecondLSD) {
+	struct syncPacket {
+		uint32_t rxTimeInt;
+		uint32_t rxTimeFrac;
+		uint32_t txTimeInt;
+		uint32_t txTimeFrac;
+	} packet;
+	string ip;
+	string port;
+	libsocket::inet_dgram_client udp(LIBSOCKET_IPv4);
+	udp.sndto("N", tcpConnection->gethost(), "1230");
+	udp.rcvfrom((void*)&packet, 16, ip, port);
+
+	int32_t secondDiff = expectedSecondLSD - 48 - packet.rxTimeInt % 10;
+	if (secondDiff < 0) secondDiff += 10;
+
+	return secondDiff * 1000000 - packet.rxTimeFrac;
+}
+
 void *recorder(void* null) {	
 	int32_t buffer_switch = 0;
 	int32_t writeInitDiscard = 0;
@@ -298,13 +305,11 @@ void *recorder(void* null) {
 	case 'L':pthread_create(&workerThread, NULL, record2Disk, NULL); break;
 	}
 
-
 	if (pcConnected) {
 		int32_t samplesToWait;
 		microphoneArray.Read();
-		int32_t timeDiff;// = syncTime(tcpConnection->gethost(), commandArgument);
-		cout << timeDiff << endl;
-		samplesToWait = (float)timeDiff*0.016;
+		samplesToWait = syncRecording(commandArgument)*0.016 - 128;
+		cout << samplesToWait << endl;
 		while (samplesToWait > 128) {
 			microphoneArray.Read();
 			samplesToWait -= 128;

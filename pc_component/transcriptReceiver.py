@@ -31,11 +31,11 @@ class TranscriptReceiver(threading.Thread):
                     continue
 
                 if res[0] == '1':                
-                    print "\r", str(utterance)+".", res[1:], "\n"
+                    print "\r"+str(utterance)+". "+res[1:]+"\n"
                     text_file.write(str(utterance)+". "+res[1:]+"\n\n")
                     utterance+=1
                 else:
-                    print "\r", res[1:],
+                    print "\r"+res[1:],
         
         text_file.close()
         self.device.tcpConnection.settimeout(None)

@@ -28,7 +28,7 @@
     <Compile Include="mgmt-console.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="ntpserver.py" />
+    <Compile Include="timeServer.py" />
     <Compile Include="pimatrix.py">
       <SubType>Code</SubType>
     </Compile>

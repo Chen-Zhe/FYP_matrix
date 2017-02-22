@@ -60,7 +60,7 @@
     </RemotePostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="main\integrated-VAD-google-speech.cpp" />
+    <ClCompile Include="main\recording-firmware.cpp" />
     <ClCompile Include="matrix-hal\dummy_sensor.cpp" />
     <ClCompile Include="matrix-hal\everloop.cpp" />
     <ClCompile Include="matrix-hal\gpio_control.cpp" />

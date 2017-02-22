@@ -159,7 +159,7 @@ void *voiceActivityDetector(void *null) {
 	VadInst *webRtcVad;
 	WebRtcVad_Create(&webRtcVad);
 	WebRtcVad_Init(webRtcVad);
-	WebRtcVad_set_mode(webRtcVad, 2);
+	WebRtcVad_set_mode(webRtcVad, 3);
 
 	int32_t vadPositiveMsg = 1;
 	int32_t vadNegativeMsg = 0;

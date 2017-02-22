@@ -91,9 +91,6 @@
     <ClCompile Include="webrtc-vad\signal_processing\vector_scaling_operations.c">
       <Filter>Library\WebRTC-VAD</Filter>
     </ClCompile>
-    <ClCompile Include="main\recording-firmware.cpp">
-      <Filter>main</Filter>
-    </ClCompile>
     <ClCompile Include="main\integrated-VAD-google-speech.cpp">
       <Filter>main</Filter>
     </ClCompile>

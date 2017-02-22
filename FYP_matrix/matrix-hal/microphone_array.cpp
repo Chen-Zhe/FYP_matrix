@@ -28,7 +28,7 @@
 
 namespace matrix_hal {
 
-MicrophoneArray::MicrophoneArray() : gain_(8) {
+MicrophoneArray::MicrophoneArray() : gain_(4) {
   raw_data_.resize(kMicarrayBufferSize);
   /*
   delayed_data_.resize(kMicarrayBufferSize);
@@ -66,7 +66,7 @@ bool MicrophoneArray::Read() {
       return false;
     }
 
-	for (auto& data : raw_data_) data = data * gain_;
+	for (auto& data : raw_data_) data = data << gain_;
 	/*
     for (uint32_t s = 0; s < NumberOfSamples(); s++) {
       int sum = 0;

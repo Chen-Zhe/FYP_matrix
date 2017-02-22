@@ -6,7 +6,6 @@ import Queue
 import mutex
 import threading
 import select
-import math
 
 def system_to_ntp_time(timestamp):
     """Convert a system time to a NTP time.
@@ -40,7 +39,7 @@ def _to_frac(timestamp, n=32):
     Retuns:
     fractional part
     """
-    return int(math.modf(timestamp)[0] * 2**n)
+    return int(abs(timestamp - _to_int(timestamp)) * 2**n)
 
 def _to_time(integ, frac, n=32):
     """Return a timestamp from an integral and fractional part.
@@ -185,8 +184,7 @@ class NTPPacket:
                 _to_int(self.recv_timestamp),
                 _to_frac(self.recv_timestamp),
                 _to_int(self.tx_timestamp),
-                #_to_frac(self.tx_timestamp)
-                int(math.modf(time.clock())[0] * 2**32))
+                _to_frac(self.tx_timestamp))
         except struct.error:
             raise NTPException("Invalid NTP packet fields.")
         return packed
@@ -293,7 +291,7 @@ class ntpServer():
 
         self.recvThread = RecvThread(self.soc, self.taskQueue)
         self.workThread = WorkThread(self.soc, self.taskQueue)
-        time.clock()
+        
         self.start()
 
     def start(self):

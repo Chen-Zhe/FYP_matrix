@@ -1,4 +1,6 @@
 from socket import *
+import time
+import struct
 
 class device():
     def __init__(self,addr):
@@ -32,7 +34,9 @@ class deviceManager():
         for pimatrix in newDevices:
             pimatrix.tcpConnection.connect((pimatrix.ip, 8000))
             data = pimatrix.tcpConnection.recv(21)
-        
+            
+            pimatrix.tcpConnection.send(struct.pack("I", int(time.time())))
+
             pimatrix.hostname=str(data[1:]).rstrip(" \t\r\n\0")
             pimatrix.status=str(data[0])
             if not pimatrix.status == 'I':

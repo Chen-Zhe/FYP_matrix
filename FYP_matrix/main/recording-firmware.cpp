@@ -278,14 +278,12 @@ inline double syncRecording(char expectedSecondLSD) {
 	struct syncPacket {
 		uint32_t rxTimeInt;
 		uint32_t rxTimeFrac;
-		uint32_t txTimeInt;
-		uint32_t txTimeFrac;
 	} packet;
 	string ip;
 	string port;
 	libsocket::inet_dgram_client udp(LIBSOCKET_IPv4);
 	udp.sndto("N", tcpConnection->gethost(), "1230");
-	udp.rcvfrom((void*)&packet, 16, ip, port);
+	udp.rcvfrom((void*)&packet, 8, ip, port);
 
 	int32_t secondDiff = expectedSecondLSD - 48 - packet.rxTimeInt % 10;
 	if (secondDiff < 0) secondDiff += 10;
@@ -307,9 +305,9 @@ void *recorder(void* null) {
 
 	if (pcConnected) {
 		int32_t samplesToWait;
+
 		microphoneArray.Read();
 		samplesToWait = syncRecording(commandArgument)*0.016 - 128;
-		cout << samplesToWait << endl;
 		while (samplesToWait > 128) {
 			microphoneArray.Read();
 			samplesToWait -= 128;

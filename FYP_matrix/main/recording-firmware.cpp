@@ -35,8 +35,6 @@ const int32_t bufferByteSize = STREAMING_CHANNELS * BUFFER_SAMPLES_PER_CHANNEL *
 #define HOST_NAME_LENGTH			20 //maximum number of characters for host name
 #define COMMAND_LENGTH				1
 
-#define NTP_TIMESTAMP_DELTA 2208988800ull
-
 void *record2Remote(void* null);
 void *record2Disk(void* null);
 

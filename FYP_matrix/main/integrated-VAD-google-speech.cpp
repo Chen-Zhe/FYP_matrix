@@ -2,11 +2,12 @@
 #include <fstream>
 #include <unistd.h>
 #include <string>
-#include <grpc++/grpc++.h>
 
 #include <pthread.h>
 #include <mqueue.h>
 #include <fcntl.h>
+
+#include <grpc++/grpc++.h>
 #include <google/cloud/speech/v1beta1/cloud_speech.grpc.pb.h>
 
 #include <netinet/in.h>
@@ -15,82 +16,46 @@
 #include <libsocket/exception.hpp>
 #include <libsocket/socket.hpp>
 
-#include "LedController.h"
-
 #include "../matrix-hal/cpp/driver/microphone_array.h"
 #include "../matrix-hal/cpp/driver/wishbone_bus.h"
 
 #include "../webrtc-vad/vad/include/webrtc_vad.h"
+
+#include "LedController.h"
+#include "sharedResources.h"
+
+namespace GoogleSpeech {
 
 using google::cloud::speech::v1beta1::RecognitionConfig;
 using google::cloud::speech::v1beta1::Speech;
 using google::cloud::speech::v1beta1::StreamingRecognizeRequest;
 using google::cloud::speech::v1beta1::StreamingRecognizeResponse;
 
-
 #define FRAME_SIZE 480
-#define NUM_CHANNELS 8
+#define NUM_CHANNELS 1
 #define SHIFT_SIZE 7680
 const int32_t numFramesPerShift = SHIFT_SIZE / FRAME_SIZE;
 const int32_t frameByteSize = FRAME_SIZE * sizeof(int16_t);
-#define VAD_DOA_Q "/vad_doa_q"
+#define VAD_GCS_Q "/vad_gcs_q"
 #define REC_VAD_Q "/rec_vad_q"
-#define ENC_RCO_Q "/enc_rco_q"
-#define NTP_TIMESTAMP_DELTA 2208988800ull
-
-namespace matrixCreator = matrix_hal;
-
-void * stopMonitor(void * null);
+#define GCS_RES_Q "/gcs_res_q"
 
 void *voiceActivityDetector(void *null);
 void *SpeechRecognition(void *null);
-void *StreamingSpeechRecognition(void *null);
-
-void syncTime(string ip);
+void *RecognitionResultStream(void *null);
 
 int16_t originalBuffer[3][NUM_CHANNELS][SHIFT_SIZE];
 int16_t emptyBuffer[SHIFT_SIZE] = { 0 };
 
 typedef std::unique_ptr<grpc::ClientReaderWriter<StreamingRecognizeRequest,StreamingRecognizeResponse>> RecognitionDataStreamer;
+typedef grpc::ClientReaderWriter<StreamingRecognizeRequest, StreamingRecognizeResponse>* StreamerRawPointer;
 
-LedController *LedCon;
+bool recording = true;
+bool recognizing = true;
 
-bool running = true;
+void stop() { recording = false; }
 
-std::unique_ptr<libsocket::inet_stream> transcriptReceiver;
-
-int main() {
-	//initilization of all message queues, parameters, devices, etc.
-
-	//init microphone array and LEDs
-	matrixCreator::WishboneBus bus;
-	bus.SpiInit();
-
-	matrixCreator::MicrophoneArray microphoneArray;
-
-	LedCon = new LedController(&bus);
-
-	LedCon->Image.leds[0].red = 3;
-	LedCon->Image.leds[8].red = 3;
-	LedCon->Image.leds[17].red = 3;
-	LedCon->Image.leds[26].red = 3;
-
-	
-	try {
-		libsocket::inet_stream_server tcpServer("0.0.0.0", "8000", LIBSOCKET_IPv4);
-
-		//signal the user that the server is ready
-		std::cout << "Ready to accept transcript connection" << std::endl;
-
-		transcriptReceiver = tcpServer.accept2();
-		syncTime(transcriptReceiver->gethost());
-	}
-	catch (const libsocket::socket_exception& exc)
-	{
-		std::cout << exc.mesg << std::endl;
-		return 0;
-	}
-
+void setup() {
 	//------init all queues------
 	//init recorder -> VAD queue to send 1 frame of normalized recording
 	struct mq_attr rec_vad_attr;
@@ -98,7 +63,7 @@ int main() {
 	rec_vad_attr.mq_maxmsg = 10;
 	rec_vad_attr.mq_msgsize = frameByteSize;
 	rec_vad_attr.mq_curmsgs = 0;
-	mqd_t toVad = mq_open(REC_VAD_Q, O_CREAT | O_WRONLY, 0644, &rec_vad_attr);
+	mq_open(REC_VAD_Q, O_CREAT, 0644, &rec_vad_attr);
 
 	//init recorder -> VAD queue to send VAD result
 	struct mq_attr vad_doa_attr;
@@ -106,24 +71,40 @@ int main() {
 	vad_doa_attr.mq_maxmsg = 10;
 	vad_doa_attr.mq_msgsize = 4;
 	vad_doa_attr.mq_curmsgs = 0;
-	mq_open(VAD_DOA_Q, O_CREAT, 0644, &vad_doa_attr);
+	mq_open(VAD_GCS_Q, O_CREAT, 0644, &vad_doa_attr);
+
+	struct mq_attr attr;
+	attr.mq_flags = 0;
+	attr.mq_maxmsg = 10;
+	attr.mq_msgsize = 4;
+	attr.mq_curmsgs = 0;
+	mq_open(GCS_RES_Q, O_CREAT, 0644, &attr);
+}
+
+void *run(void *null) {
+	//initialize control variables
+	recording = true;
+	recognizing = true;
+
+	//init microphone array and LEDs
+	for (matrixCreator::LedValue& led : LedCon->Image.leds) {
+		led.red = 2; led.green = 0; led.blue = 0;
+	}
+
+	mqd_t toVad = mq_open(REC_VAD_Q, O_WRONLY);
 
 	int32_t buffer_switch = 0;
 
 	//------init all threads------
 
 	pthread_t VAD;
-	pthread_t DOA;
-	pthread_t monitor;
+	pthread_t googleSpeech;
 
 	pthread_create(&VAD, NULL, voiceActivityDetector, (void *)NULL);
-	pthread_create(&DOA, NULL, SpeechRecognition, (void *)NULL);
-	pthread_create(&monitor, NULL, stopMonitor, (void *)NULL);
-
-	microphoneArray.Setup(&bus);
+	pthread_create(&googleSpeech, NULL, SpeechRecognition, (void *)NULL);
 
 	//------recorder thread------
-	while (running) {
+	while (recording) {
 		int32_t step = 0;
 		while (step < SHIFT_SIZE) {
 
@@ -142,16 +123,15 @@ int main() {
 		}
 		buffer_switch = (buffer_switch + 1) % 3;
 	}
+
+	recognizing = false;
+	mq_close(toVad);
+	pthread_join(VAD, NULL);
+	pthread_join(googleSpeech, NULL);
+	pthread_exit(NULL);
 }
 
-void *stopMonitor(void *null) {
-	char command;
-	transcriptReceiver->rcv(&command, 1);
-	if (command == 'S') {
-		running = false;
-		pthread_exit(NULL);
-	}
-}
+
 
 void *voiceActivityDetector(void *null) {
 	int16_t internalFrameBuffer[FRAME_SIZE];
@@ -159,7 +139,7 @@ void *voiceActivityDetector(void *null) {
 	VadInst *webRtcVad;
 	WebRtcVad_Create(&webRtcVad);
 	WebRtcVad_Init(webRtcVad);
-	WebRtcVad_set_mode(webRtcVad, 3);
+	WebRtcVad_set_mode(webRtcVad, 2);
 
 	int32_t vadPositiveMsg = 1;
 	int32_t vadNegativeMsg = 0;
@@ -170,10 +150,10 @@ void *voiceActivityDetector(void *null) {
 	int32_t frameCount = numFramesPerShift; //count down counter for 10 frames
 
 	mqd_t fromRecorder = mq_open(REC_VAD_Q, O_RDONLY);
-	mqd_t toDoa = mq_open(VAD_DOA_Q, O_WRONLY);
+	mqd_t toGoogleSpeech = mq_open(VAD_GCS_Q, O_WRONLY);
 
 	//------VAD thread------
-	while (true) {
+	while (recognizing) {
 
 		frameCount--;//count-down counters
 
@@ -184,29 +164,31 @@ void *voiceActivityDetector(void *null) {
 		if (frameCount == 0) {
 			frameCount = numFramesPerShift;//reset count-down counter
 
-			if (vadPositiveCount > 10 || (vadPositiveCount > 0 && extendVadFor1Frame)) {//voice activity detected
+			if (vadPositiveCount > 8 || (vadPositiveCount > 0 && extendVadFor1Frame)) {//voice activity detected
 
-				if (vadPositiveCount > 10)
+				if (vadPositiveCount > 8)
 					extendVadFor1Frame = true;
 				else
 					extendVadFor1Frame = false;
 
 				LedCon->updateLed();
 
-				mq_send(toDoa, (char*)&vadPositiveMsg, 4, 0);
+				mq_send(toGoogleSpeech, (char*)&vadPositiveMsg, 4, 0);
 				std::cout << "Voice Detected" << std::endl;
 			}
 			else {//no voice activity				
 				LedCon->turnOffLed();
 				extendVadFor1Frame = false;
 
-				mq_send(toDoa, (char*)&vadNegativeMsg, 4, 0);
+				mq_send(toGoogleSpeech, (char*)&vadNegativeMsg, 4, 0);
 				std::cout << "No Voice" << std::endl;
 			}
 			vadPositiveCount = 0;
 		}
 
 	}
+	mq_close(fromRecorder);
+	mq_close(toGoogleSpeech);
 	pthread_exit(NULL);
 }
 
@@ -245,17 +227,11 @@ void *SpeechRecognition(void *null) {
 
 	int32_t shiftVadStatus;
 
-	mqd_t fromVad = mq_open(VAD_DOA_Q, O_RDONLY);
-
-	struct mq_attr attr;
-	attr.mq_flags = 0;
-	attr.mq_maxmsg = 10;
-	attr.mq_msgsize = 4;
-	attr.mq_curmsgs = 0;
-	mqd_t toRecognition = mq_open(ENC_RCO_Q, O_CREAT | O_WRONLY, 0644, &attr);
+	mqd_t fromVad = mq_open(VAD_GCS_Q, O_RDONLY);
+	mqd_t toResultStream = mq_open(GCS_RES_Q, O_WRONLY);
 	
-	pthread_t RCO;
-	pthread_create(&RCO, NULL, StreamingSpeechRecognition, (void *)NULL);
+	pthread_t resultStream;
+	pthread_create(&resultStream, NULL, RecognitionResultStream, (void *)NULL);
 
 	// start grpc channel
 	auto creds = grpc::GoogleDefaultCredentials();
@@ -274,14 +250,15 @@ void *SpeechRecognition(void *null) {
 	std::unique_ptr<Speech::Stub> speech(Speech::NewStub(channel));
 	grpc::ClientContext *context = new grpc::ClientContext;
 	RecognitionDataStreamer streamer = speech->StreamingRecognize(context);
+	StreamerRawPointer streamerRawPtr = streamer.get();
 
-	mq_send(toRecognition, (char*)&streamer, 4, 0);
-	mq_send(toRecognition, (char*)context, 4, 0);
+	mq_send(toResultStream, (char*)&streamerRawPtr, 4, 0);
+	mq_send(toResultStream, (char*)context, 4, 0);
 
 	StreamingRecognizeRequest streamingRequest;
 
 	//------Speech Recognition thread------
-	while (running) {
+	while (recognizing) {
 		mq_receive(fromVad, (char*)&shiftVadStatus, 4, NULL); //blocking
 		counter++;
 
@@ -317,33 +294,37 @@ void *SpeechRecognition(void *null) {
 			speech = Speech::NewStub(channel);
 			context = new grpc::ClientContext();			
 			streamer = speech->StreamingRecognize(context);
+			streamerRawPtr = streamer.get();
 
-			mq_send(toRecognition, (char*)&streamer, 4, 0);
-			mq_send(toRecognition, (char*)context, 4, 0);
+			mq_send(toResultStream, (char*)&streamerRawPtr, 4, 0);
+			mq_send(toResultStream, (char*)context, 4, 0);
 
 			streamStarted = false;
 		}
 
 		bufferSwitch = (bufferSwitch + 1) % 3;
 	}
-
 	header.dataSize = 32000 * counter;
 	header.overallSize = header.dataSize + 36;
 	wholeRec.seekp(0);
 	wholeRec.write((const char*)&header, sizeof(WaveHeader));
 	wholeRec.close();
+
 	streamer->WritesDone();
-	pthread_join(RCO, NULL);
+	mq_close(toResultStream);
+	mq_close(fromVad);
+
+	pthread_join(resultStream, NULL);
 	pthread_exit(NULL);
 }
 
-void *StreamingSpeechRecognition(void *null) {
+void *RecognitionResultStream(void *null) {
 	StreamingRecognizeResponse response;
-	RecognitionDataStreamer streamer;
+	StreamerRawPointer streamer;
 	grpc::ClientContext *context;
-	mqd_t fromEnhancer = mq_open(ENC_RCO_Q, O_RDONLY);
+	mqd_t fromEnhancer = mq_open(GCS_RES_Q, O_RDONLY);
 
-	while(running){
+	while(recognizing){
 		mq_receive(fromEnhancer, (char*)&streamer, 4, NULL);
 		mq_receive(fromEnhancer, (char*)&context, 4, NULL);
 
@@ -360,7 +341,7 @@ void *StreamingSpeechRecognition(void *null) {
 
 					for (int a = 0; a < result.alternatives_size(); ++a) {
 						auto alternative = result.alternatives(a);
-						*transcriptReceiver << is_final + alternative.transcript() + '|';					
+						*tcpConnection << is_final + alternative.transcript() + '|';					
 					}
 				}
 
@@ -369,85 +350,15 @@ void *StreamingSpeechRecognition(void *null) {
 			catch (const libsocket::socket_exception& exc)
 			{
 				std::cout << "Network Disconnected" << std::endl;
-				running = false;
-				pthread_exit(NULL);//terminate itself
+				recording = false;
+				break;
 			}
 		}
 		
 		delete context;
 	}
-
+	mq_close(fromEnhancer);
+	pthread_exit(NULL);
 }
 
-void syncTime(string ip) {
-
-	string remoteIP;
-	string remotePort;
-
-	remoteIP.resize(16);
-	remotePort.resize(16);
-	// Total: 384 bits or 48 bytes.
-	typedef struct
-	{
-
-		unsigned li : 2;       // Only two bits. Leap indicator.
-		unsigned vn : 3;       // Only three bits. Version number of the protocol.
-		unsigned mode : 3;       // Only three bits. Mode. Client will pick mode 3 for client.
-
-		uint8_t stratum;         // Eight bits. Stratum level of the local clock.
-		uint8_t poll;            // Eight bits. Maximum interval between successive messages.
-		uint8_t precision;       // Eight bits. Precision of the local clock.
-
-		uint32_t rootDelay;      // 32 bits. Total round trip delay time.
-		uint32_t rootDispersion; // 32 bits. Max error aloud from primary clock source.
-		uint32_t refId;          // 32 bits. Reference clock identifier.
-
-		uint32_t refTm_s;        // 32 bits. Reference time-stamp seconds.
-		uint32_t refTm_f;        // 32 bits. Reference time-stamp fraction of a second.
-
-		uint32_t origTm_s;       // 32 bits. Originate time-stamp seconds.
-		uint32_t origTm_f;       // 32 bits. Originate time-stamp fraction of a second.
-
-		uint32_t rxTm_s;         // 32 bits. Received time-stamp seconds.
-		uint32_t rxTm_f;         // 32 bits. Received time-stamp fraction of a second.
-
-		uint32_t txTm_s;         // 32 bits and the most important field the client cares about. Transmit time-stamp seconds.
-		uint32_t txTm_f;         // 32 bits. Transmit time-stamp fraction of a second.
-
-	} ntp_packet;
-
-	ntp_packet packet = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-
-	memset(&packet, 0, sizeof(ntp_packet));
-
-	// Set the first byte's bits to 00,011,011 for li = 0, vn = 3, and mode = 3. The rest will be left set to zero.
-
-	*((char *)&packet) = 0x1b; // Represents 27 in base 10 or 00011011 in base 2.
-
-	libsocket::inet_dgram_client sock(LIBSOCKET_IPv4);
-	sock.sndto(&packet, 48, ip, "1230");
-	sock.rcvfrom(&packet, 48, remoteIP, remotePort);
-
-
-	// These two fields contain the time-stamp seconds as the packet left the NTP server.
-	// The number of seconds correspond to the seconds passed since 1900.
-	// ntohl() converts the bit/byte order from the network's to host's "endianness".
-
-	packet.txTm_s = ntohl(packet.txTm_s); // Time-stamp seconds.
-	packet.txTm_f = ntohl(packet.txTm_f); // Time-stamp fraction of a second.
-
-										  // Extract the 32 bits that represent the time-stamp seconds (since NTP epoch) from when the packet left the server.
-										  // Subtract 70 years worth of seconds from the seconds since 1900.
-										  // This leaves the seconds since the UNIX epoch of 1970.
-										  // (1900)------------------(1970)**************************************(Time Packet Left the Server)
-
-	time_t txTm = (time_t)(packet.txTm_s - NTP_TIMESTAMP_DELTA);
-
-	char command[30];
-	sprintf(command, "sudo date -s '@%d'", txTm);
-	
-	if (system(command) == -1)
-		cout << "Unable to set system time" << endl;
-	else
-		cout << "Time synchronised with remote PC" << endl;
 }

@@ -7,11 +7,9 @@
 #include <valarray>
 #include <sstream>
 #include <fstream>
-#include <sys/socket.h>
 #include <wiringPi.h>
 #include <mqueue.h>
 #include <fcntl.h>
-#include <sys/time.h>
 #include <netinet/in.h>
 
 #include <libsocket/inetserverstream.hpp>
@@ -24,9 +22,7 @@
 #include "../matrix-hal/cpp/driver/wishbone_bus.h"
 
 #include "LedController.h"
-
-namespace matrixCreator = matrix_hal;
-using namespace std;
+#include "sharedResources.h"
 
 #define BUFFER_SAMPLES_PER_CHANNEL	16000 //1 second of recording
 #define STREAMING_CHANNELS			8 //Maxmium 8 channels
@@ -45,9 +41,6 @@ void * motionDetection(void * null);
 void *udpBroadcastReceiver(void *null);
 void * recorder(void * null);
 
-LedController *LedCon;
-matrixCreator::MicrophoneArray microphoneArray;
-
 char sysInfo[COMMAND_LENGTH + HOST_NAME_LENGTH];
 
 bool pcConnected = false;
@@ -56,8 +49,6 @@ bool recording = false;
 int16_t buffer[2][BUFFER_SAMPLES_PER_CHANNEL][STREAMING_CHANNELS];
 
 pthread_mutex_t bufferMutex[2] = { PTHREAD_MUTEX_INITIALIZER };
-
-unique_ptr<libsocket::inet_stream> tcpConnection;
 
 char* status = &sysInfo[0];
 char* hostname = &sysInfo[1];
@@ -83,6 +74,8 @@ int main(int argc, char *argv[]) {
 		pthread_t motionDetect;
 		pthread_create(&motionDetect, NULL, motionDetection, NULL);
 	}	
+
+	GoogleSpeech::setup();
 
 	//stand by
 	libsocket::inet_stream_server tcpServer("0.0.0.0", "8000", LIBSOCKET_IPv4);
@@ -116,7 +109,6 @@ int main(int argc, char *argv[]) {
 				case 'N': {//record to network
 					if (*status == 'I') {
 						*status = 'N';
-						recording = true;
 						tcpConnection->rcv(&commandArgument, 1, MSG_WAITALL);
 						pthread_create(&recorderThread, NULL, recorder, NULL);
 						break;
@@ -125,7 +117,6 @@ int main(int argc, char *argv[]) {
 				case 'L': {//record to disk
 					if (*status == 'I') {
 						*status = 'L';
-						recording = true;
 						tcpConnection->rcv(&commandArgument, 1, MSG_WAITALL);
 						pthread_create(&recorderThread, NULL, recorder, NULL);
 					}
@@ -133,7 +124,16 @@ int main(int argc, char *argv[]) {
 					break;
 				}
 
-				case 'I': { //stop everything					
+				case 'S': {//google speech
+					if (*status == 'I') {
+						*status = 'S';						
+						pthread_create(&recorderThread, NULL, GoogleSpeech::run, NULL);
+					}
+
+					break;
+				}
+
+				case 'I': { //stop everything
 
 					switch (*status) {
 						case 'I': break;
@@ -144,6 +144,11 @@ int main(int argc, char *argv[]) {
 						}
 						case 'N': {
 							recording = false;
+							pthread_join(recorderThread, NULL);
+							break;
+						}
+						case 'S': {
+							GoogleSpeech::stop();
 							pthread_join(recorderThread, NULL);
 							break;
 						}
@@ -219,7 +224,6 @@ void *motionDetection(void *null) {
 			if (*status == 'I') {
 				LedCon->turnOffLed();
 				*status = 'L';
-				recording = true;
 				pthread_create(&recorderThread, NULL, recorder, NULL);
 			}
 			else if (*status == 'L') {
@@ -292,6 +296,8 @@ inline double syncRecording(char expectedSecondLSD) {
 void *recorder(void* null) {	
 	int32_t buffer_switch = 0;
 	int32_t writeInitDiscard = 0;
+
+	recording = true;
 	//lock down buffer 0 before spawning streaming thread
 	pthread_mutex_lock(&bufferMutex[buffer_switch]);
 

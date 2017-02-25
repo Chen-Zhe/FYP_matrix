@@ -10,18 +10,14 @@
 #include <grpc++/grpc++.h>
 #include <google/cloud/speech/v1beta1/cloud_speech.grpc.pb.h>
 
-#include <netinet/in.h>
 #include <libsocket/inetserverstream.hpp>
-#include <libsocket/inetclientdgram.hpp>
 #include <libsocket/exception.hpp>
-#include <libsocket/socket.hpp>
 
 #include "../matrix-hal/cpp/driver/microphone_array.h"
 #include "../matrix-hal/cpp/driver/wishbone_bus.h"
 
 #include "../webrtc-vad/vad/include/webrtc_vad.h"
 
-#include "LedController.h"
 #include "sharedResources.h"
 
 namespace GoogleSpeech {

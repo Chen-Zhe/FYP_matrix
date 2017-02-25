@@ -10,7 +10,6 @@
 #include <wiringPi.h>
 #include <mqueue.h>
 #include <fcntl.h>
-#include <netinet/in.h>
 
 #include <libsocket/inetserverstream.hpp>
 #include <libsocket/inetserverdgram.hpp>
@@ -21,7 +20,6 @@
 #include "../matrix-hal/cpp/driver/microphone_array.h"
 #include "../matrix-hal/cpp/driver/wishbone_bus.h"
 
-#include "LedController.h"
 #include "sharedResources.h"
 
 #define BUFFER_SAMPLES_PER_CHANNEL	16000 //1 second of recording

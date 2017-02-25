@@ -29,7 +29,7 @@ class TimeServer():
         self.soc = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
         self.soc.bind(("0.0.0.0",1230))
 
-        self.workThread = SendThread(self.soc)
+        self.workThread = workThread(self.soc)
         time.clock()
 
         print "Windows Perf Timer :1230"

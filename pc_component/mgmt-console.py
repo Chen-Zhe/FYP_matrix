@@ -19,7 +19,7 @@ def printMenu():
         if not deviceMan.deviceBusy:
             print "3. Record over network"
             print "4. Record to disk"
-            print "5. Use device as LVCSR"
+            print "5. LVCSR (Single Device)"
         else:
             print "8. Stop all devices' current task"
         print "----------------------"
@@ -54,7 +54,7 @@ while(True):
             streamer.continue_recording = False
 
         deviceMan.sendCommand("stop")
-        print "stopping......"
+        print "Stopping......"
         for streamer in streamerList:
             streamer.join()
 
@@ -64,17 +64,18 @@ while(True):
 
     elif choice == 5:
         deviceMan.tabulateDevice()
-        sel = input("Select one device to do LVCSR (1-"+ str(deviceMan.numDevices) +": ")
-        if choice<1 or choice>deviceMan.numDevices:
+        sel = input("Select one device to do LVCSR (1-"+ str(deviceMan.numDevices) +"): ")
+        if sel<1 or sel>deviceMan.numDevices:
             raw_input("Invalid choice, press Enter to continue...")
+            continue
             
         transcriber = transcriptReceiver.TranscriptReceiver(deviceMan.deviceList[sel-1])
         transcriber.start()
 
-        raw_input("Press Enter to stop transcribing...")
+        raw_input("Press Enter to stop transcribing...\n\n")
         transcriber.keep_alive = False
         deviceMan.sendCommand("stop")
-        print "stopping..."
+        print "Stopping..."
         transcriber.join()
     
     elif choice == 8:

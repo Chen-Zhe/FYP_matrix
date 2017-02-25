@@ -12,7 +12,7 @@ class TranscriptReceiver(threading.Thread):
         self.device.tcpConnection.send("S")
         utterance = 1
         text_file = open("transcript.txt", "w")        
-        text_file.write("------Final Transcript------\n")
+        text_file.write("------Final Transcript------\n\n")
 
         while self.keep_alive:
             self.device.tcpConnection.settimeout(1)

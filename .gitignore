@@ -240,5 +240,7 @@ ModelManifest.xml
 
 # FAKE - F# Make
 .fake/
-/pc_component/*.wav
+# ignore unwanted files
+/pc_component/Recordings/*.wav
 /pc_component/*.pyc
+/pc_component/Recordings/*.txt

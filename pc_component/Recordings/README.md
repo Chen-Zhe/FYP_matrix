@@ -1,0 +1,1 @@
+This is a place-holder folder to stored streamed recording files and transcript files

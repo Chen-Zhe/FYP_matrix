@@ -1,6 +1,7 @@
 import socket
 import threading
 import os
+import time
 
 class TranscriptReceiver(threading.Thread):
     def __init__(self, device):
@@ -11,7 +12,8 @@ class TranscriptReceiver(threading.Thread):
     def run(self):
         self.device.tcpConnection.send("S")
         utterance = 1
-        text_file = open("transcript.txt", "w")        
+        currentDateAndTime = time.strftime("%Y%m%d_%H%M%S", time.localtime())
+        text_file = open("Recordings/"+ currentDateAndTime +"_transcript.txt", "w")
         text_file.write("------Final Transcript------\n\n")
 
         while self.keep_alive:

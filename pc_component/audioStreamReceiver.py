@@ -11,7 +11,7 @@ class RecordingStream(threading.Thread):
 
     def run(self):
         print "Receiving from "+self.device.hostname+"..."
-        filename = self.device.hostname+"_"+self.dateAndTime+"_8ch.wav"
+        filename = "Recordings/"+self.device.hostname+"_"+self.dateAndTime+"_8ch.wav"
         out_sound = wave.open(filename, 'wb')
         # (num of channels, sampling width in bytes, sampling rate, num of frames, compression type, compression name)
         out_sound.setparams((8, 2, 16000, 0, 'NONE', 'not compressed'))

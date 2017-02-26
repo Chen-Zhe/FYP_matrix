@@ -35,11 +35,11 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <RemoteCppCompileToolExe>g++ -I/home/pi/google-speech-api/googleapis/gens</RemoteCppCompileToolExe>
-    <RemoteLdToolExe>g++  -lfftw3f -lgsl -lpthread -lsocket++ -lrt -lgrpc++ -lprotobuf</RemoteLdToolExe>
+    <RemoteLdToolExe>g++</RemoteLdToolExe>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <Link>
-      <LibraryDependencies>wiringPi;googleapis</LibraryDependencies>
+      <LibraryDependencies>wiringPi;googleapis;pthread;socket++;rt;grpc++;protobuf</LibraryDependencies>
     </Link>
     <RemotePostBuildEvent>
       <Command>

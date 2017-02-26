@@ -36,6 +36,8 @@ class TimeServer():
         self.workThread.start()
 
     def stop(self):
-        self.workThread.work = False       
-        self.soc.close() 
-        self.workThread.join()      
+        self.workThread.work = False
+        self.soc.sendto("stop",("localhost",1230))
+        self.workThread.join()
+        self.soc.close()
+        

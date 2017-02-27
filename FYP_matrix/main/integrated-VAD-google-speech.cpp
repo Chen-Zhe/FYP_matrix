@@ -28,7 +28,7 @@ using google::cloud::speech::v1beta1::StreamingRecognizeRequest;
 using google::cloud::speech::v1beta1::StreamingRecognizeResponse;
 
 #define FRAME_SIZE 480
-#define NUM_CHANNELS 1
+#define NUM_CHANNELS 8
 #define SHIFT_SIZE 7680
 const int32_t numFramesPerShift = SHIFT_SIZE / FRAME_SIZE;
 const int32_t frameByteSize = FRAME_SIZE * sizeof(int16_t);
@@ -37,6 +37,7 @@ const int32_t frameByteSize = FRAME_SIZE * sizeof(int16_t);
 #define GCS_RES_Q "/gcs_res_q"
 
 void *voiceActivityDetector(void *null);
+void SpeechEnhancement(int16_t source[NUM_CHANNELS][SHIFT_SIZE], int16_t dest[SHIFT_SIZE]);
 void *SpeechRecognition(void *null);
 void *RecognitionResultStream(void *null);
 
@@ -48,6 +49,8 @@ typedef grpc::ClientReaderWriter<StreamingRecognizeRequest, StreamingRecognizeRe
 
 bool recording = true;
 bool recognizing = true;
+
+int channelToSend = 0;
 
 void stop() { recording = false; }
 
@@ -75,6 +78,8 @@ void setup() {
 	attr.mq_msgsize = 4;
 	attr.mq_curmsgs = 0;
 	mq_open(GCS_RES_Q, O_CREAT, 0644, &attr);
+
+	cout << "Google Speech using channel " << channelToSend << endl;
 }
 
 void *run(void *null) {
@@ -99,6 +104,8 @@ void *run(void *null) {
 	pthread_create(&VAD, NULL, voiceActivityDetector, (void *)NULL);
 	pthread_create(&googleSpeech, NULL, SpeechRecognition, (void *)NULL);
 
+	int channelSelected = channelToSend;
+	cout << "------ Google Speech starting ------" << endl;
 	//------recorder thread------
 	while (recording) {
 		int32_t step = 0;
@@ -113,17 +120,18 @@ void *run(void *null) {
 				step++;
 
 				if (step%FRAME_SIZE == 0) {
-					if (!recording) recognizing = false;;
-					mq_send(toVad, (char*)&originalBuffer[buffer_switch][0][step - FRAME_SIZE], frameByteSize, 0);
+					if (!recording&&step == SHIFT_SIZE) recognizing = false;
+					mq_send(toVad, (char*)&originalBuffer[buffer_switch][channelSelected][step - FRAME_SIZE], frameByteSize, 0);
 				}
 			}
 		}
 		buffer_switch = (buffer_switch + 1) % 3;
 	}
-
+		
 	mq_close(toVad);
 	pthread_join(VAD, NULL);
 	pthread_join(googleSpeech, NULL);
+	cout << "------ Google Speech stoped ------" << endl;
 	pthread_exit(NULL);
 }
 
@@ -188,9 +196,20 @@ void *voiceActivityDetector(void *null) {
 	pthread_exit(NULL);
 }
 
-//Enhance speech (not done) and directly stream the speech segment to Google Speech API as well as save to disk
+void SpeechEnhancement(int16_t source[NUM_CHANNELS][SHIFT_SIZE], int16_t dest[SHIFT_SIZE]) {
+	int ch = channelToSend;
+	for (int i = 0; i < SHIFT_SIZE; i++) {
+		dest[i] = source[ch][i];
+	}
+}
+
+
+//Enhance speech and directly stream the speech segment to Google Speech API as well as save to disk
 void *SpeechRecognition(void *null) {
 	int32_t bufferSwitch = 0;
+
+	int16_t enhancedBuffer[SHIFT_SIZE];
+
 	bool streamStarted = false;
 	const size_t dataChunkSize = SHIFT_SIZE * sizeof(int16_t);
 
@@ -219,7 +238,7 @@ void *SpeechRecognition(void *null) {
 
 	wholeRec.write((const char*)&header, sizeof(WaveHeader));
 	
-	uint32_t counter = 0;
+	uint32_t sessionLengthCounter = 0;
 
 	int32_t shiftVadStatus;
 
@@ -256,7 +275,7 @@ void *SpeechRecognition(void *null) {
 	//------Speech Recognition thread------
 	while (recognizing) {
 		mq_receive(fromVad, (char*)&shiftVadStatus, 4, NULL); //blocking
-		counter++;
+		sessionLengthCounter++;
 
 		if (shiftVadStatus == 0)
 			wholeRec.write((const char*)emptyBuffer, SHIFT_SIZE * sizeof(int16_t));
@@ -267,14 +286,21 @@ void *SpeechRecognition(void *null) {
 				streamStarted = true;
 				streamer->Write(configRequest);
 
+				//send the last buffer to preserve the first 0.5 seconds
+
+				SpeechEnhancement(originalBuffer[(bufferSwitch + 2) % 3], enhancedBuffer);
+
 				//supposed to be -1, but due to c's implementation of modulo operation, it has to be +2
-				wholeRec.write((const char*)originalBuffer[(bufferSwitch + 2) % 3][0], SHIFT_SIZE * sizeof(int16_t));
-				streamingRequest.set_audio_content((void *)originalBuffer[(bufferSwitch + 2) % 3][0], dataChunkSize);
+				wholeRec.write((const char*)enhancedBuffer, dataChunkSize);
+
+				streamingRequest.set_audio_content((void *)enhancedBuffer, dataChunkSize);
 				streamer->Write(streamingRequest);
 			}
+			SpeechEnhancement(originalBuffer[bufferSwitch], enhancedBuffer);
 
-			wholeRec.write((const char*)originalBuffer[bufferSwitch][0], SHIFT_SIZE * sizeof(int16_t));
-			streamingRequest.set_audio_content((void *)originalBuffer[bufferSwitch][0], dataChunkSize);
+			wholeRec.write((const char*)enhancedBuffer, dataChunkSize);
+
+			streamingRequest.set_audio_content((void *)enhancedBuffer, dataChunkSize);
 			streamer->Write(streamingRequest);
 		}
 		else if (streamStarted) {
@@ -300,7 +326,7 @@ void *SpeechRecognition(void *null) {
 
 		bufferSwitch = (bufferSwitch + 1) % 3;
 	}
-	header.dataSize = 32000 * counter;
+	header.dataSize = 32000 * sessionLengthCounter;
 	header.overallSize = header.dataSize + 36;
 	wholeRec.seekp(0);
 	wholeRec.write((const char*)&header, sizeof(WaveHeader));

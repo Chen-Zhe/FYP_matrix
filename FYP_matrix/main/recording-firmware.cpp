@@ -53,6 +53,10 @@ char* hostname = &sysInfo[1];
 
 char commandArgument;
 
+std::unique_ptr<libsocket::inet_stream> tcpConnection;
+LedController *LedCon;
+matrixCreator::MicrophoneArray microphoneArray;
+
 int main(int argc, char *argv[]) {
 
 	gethostname(hostname, HOST_NAME_LENGTH);
@@ -68,10 +72,16 @@ int main(int argc, char *argv[]) {
 	pthread_t udpThread;
 	pthread_create(&udpThread, NULL, udpBroadcastReceiver, NULL);
 
-	if (argc == 1) {
+	if (argc > 1) {
+		char channel = argv[1][0];
+		if ('0' <= channel && channel <= '8')
+			GoogleSpeech::channelToSend = channel - 48;
+	}
+
+	if (argc <= 2) {
 		pthread_t motionDetect;
 		pthread_create(&motionDetect, NULL, motionDetection, NULL);
-	}	
+	}
 
 	GoogleSpeech::setup();
 

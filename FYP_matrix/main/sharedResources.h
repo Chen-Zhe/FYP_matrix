@@ -1,11 +1,4 @@
 #pragma once
-#include <libsocket/inetserverstream.hpp>
-#include <libsocket/exception.hpp>
-
-#include "../matrix-hal/cpp/driver/everloop_image.h"
-#include "../matrix-hal/cpp/driver/microphone_array.h"
-#include "../matrix-hal/cpp/driver/wishbone_bus.h"
-
 #include "LedController.h"
 
 namespace matrixCreator = matrix_hal;
@@ -18,5 +11,6 @@ extern matrixCreator::MicrophoneArray microphoneArray;
 namespace GoogleSpeech {
 	void setup();
 	void *run(void *null);
-	void stop();	
+	void stop();
+	extern int channelToSend;
 }

@@ -113,6 +113,7 @@ void *run(void *null) {
 				step++;
 
 				if (step%FRAME_SIZE == 0) {
+					if (!recording) recognizing = false;;
 					mq_send(toVad, (char*)&originalBuffer[buffer_switch][0][step - FRAME_SIZE], frameByteSize, 0);
 				}
 			}
@@ -120,7 +121,6 @@ void *run(void *null) {
 		buffer_switch = (buffer_switch + 1) % 3;
 	}
 
-	recognizing = false;
 	mq_close(toVad);
 	pthread_join(VAD, NULL);
 	pthread_join(googleSpeech, NULL);

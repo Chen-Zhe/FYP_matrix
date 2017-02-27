@@ -28,7 +28,12 @@ def printMenu():
 
 while(True):
     printMenu()
-    choice = input("Choice: ");
+    rawChoice = raw_input("Choice: ");
+    if len(rawChoice) == 0:
+        choice = 1
+    else:
+        choice = int(rawChoice)
+
     if choice == 1:
         print "Scanning......"
         deviceMan.discoverDevices()
@@ -63,11 +68,14 @@ while(True):
         deviceMan.sendCommand("rec2sd", digit)
 
     elif choice == 5:
-        deviceMan.tabulateDevice()
-        sel = input("Select one device to do LVCSR (1-"+ str(deviceMan.numDevices) +"): ")
-        if sel<1 or sel>deviceMan.numDevices:
-            raw_input("Invalid choice, press Enter to continue...")
-            continue
+        if deviceMan.numDevices == 1:
+            sel = 1
+        else:
+            deviceMan.tabulateDevice()
+            sel = input("Select one device to do LVCSR (1-"+ str(deviceMan.numDevices) +"): ")
+            if sel<1 or sel>deviceMan.numDevices:
+                raw_input("Invalid choice, press Enter to continue...")
+                continue
             
         transcriber = transcriptReceiver.TranscriptReceiver(deviceMan.deviceList[sel-1])
         transcriber.start()

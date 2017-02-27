@@ -13,7 +13,8 @@ class TranscriptReceiver(threading.Thread):
         self.device.tcpConnection.send("S")
         utterance = 1
         currentDateAndTime = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-        text_file = open("Recordings/"+ currentDateAndTime +"_transcript.txt", "w")
+        fileName = "Recordings\\"+ currentDateAndTime +"_transcript.txt"
+        text_file = open(fileName, "w")
         text_file.write("------Final Transcript------\n\n")
 
         while self.keep_alive:
@@ -41,4 +42,4 @@ class TranscriptReceiver(threading.Thread):
         
         text_file.close()
         self.device.tcpConnection.settimeout(None)
-        os.system("transcript.txt")
+        os.system(fileName)

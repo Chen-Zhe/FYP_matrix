@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
 
 	if (argc > 1) {
 		char channel = argv[1][0];
-		if ('0' <= channel && channel <= '8')
+		if ('0' <= channel && channel <= '7')
 			GoogleSpeech::channelToSend = channel - 48;
 	}
 

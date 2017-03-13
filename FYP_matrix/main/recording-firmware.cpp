@@ -328,7 +328,7 @@ void *recorder(void* null) {
 		writeInitDiscard = samplesToWait;		
 	}
 	cout << "------ Recording starting ------" << endl;
-
+	microphoneArray.SetGain(3);
 	microphoneArray.Read();
 	while (recording) {
 		int32_t step = 0;

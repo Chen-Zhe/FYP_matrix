@@ -105,6 +105,7 @@ void *run(void *null) {
 	pthread_create(&googleSpeech, NULL, SpeechRecognition, (void *)NULL);
 
 	int channelSelected = channelToSend;
+	microphoneArray.SetGain(4);
 	cout << "------ Google Speech starting ------" << endl;
 	//------recorder thread------
 	while (recording) {
@@ -199,7 +200,7 @@ void *voiceActivityDetector(void *null) {
 void SpeechEnhancement(int16_t source[NUM_CHANNELS][SHIFT_SIZE], int16_t dest[SHIFT_SIZE]) {
 	int ch = channelToSend;
 	for (int i = 0; i < SHIFT_SIZE; i++) {
-		dest[i] = source[ch][i];
+		dest[i] = source[ch][i] << 1;
 	}
 }
 

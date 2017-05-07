@@ -45,7 +45,7 @@ while(True):
         raw_input("Press Enter to continue...")
 
     elif choice == 3:
-        
+        deviceMan.cleanTcpBuffer()
         currentDateAndTime = time.strftime("%Y%m%d_%H%M%S", time.localtime())
 
         streamerList = [audioStreamReceiver.RecordingStream(device, currentDateAndTime) for device in deviceMan.deviceList]
@@ -68,6 +68,7 @@ while(True):
         deviceMan.sendCommand("rec2sd", digit)
 
     elif choice == 5:
+        deviceMan.cleanTcpBuffer()
         if deviceMan.numDevices == 1:
             sel = 1
         else:
@@ -102,6 +103,6 @@ while(True):
     else:
         print "Not a valid choice"
 
-print "Thank you for using Pi-Matrix Management Console"
-print "Have a nice day!"
+print "\n\nThank you for using Pi-Matrix Management Console"
+print "Have a nice day!\n"
 winPerfTimer.stop()

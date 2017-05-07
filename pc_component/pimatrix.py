@@ -92,3 +92,13 @@ class deviceManager():
             pimatrix.tcpConnection.close()
         self.deviceList = []
         self.numDevices = 0
+
+    def cleanTcpBuffer(self):
+        for pimatrix in self.deviceList:
+            pimatrix.tcpConnection.setblocking(False)
+            while True:
+                try:                
+                    pimatrix.tcpConnection.recv(4096)
+                except:
+                    pimatrix.tcpConnection.setblocking(True)
+                    break

@@ -17,10 +17,10 @@ class TranscriptReceiver(threading.Thread):
         text_file = open(fileName, "w")
         text_file.write("------Final Transcript------\n\n")
 
-        while self.keep_alive:
-            self.device.tcpConnection.settimeout(1)
+        self.device.tcpConnection.settimeout(1)
+        while self.keep_alive:            
             try:
-                buffer = self.device.tcpConnection.recv(128)
+                buffer = self.device.tcpConnection.recv(1024)
                 
                 if len(buffer) == 0:
                     break
@@ -38,7 +38,8 @@ class TranscriptReceiver(threading.Thread):
                     text_file.write(str(utterance)+". "+res[1:]+"\n\n")
                     utterance+=1
                 else:
-                    print "\r"+res[1:],
+                    if res[0] == '0':  
+                        print "\r"+res[1:],
         
         text_file.close()
         self.device.tcpConnection.settimeout(None)

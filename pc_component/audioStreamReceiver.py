@@ -46,11 +46,3 @@ class RecordingStream(threading.Thread):
         printout = self.device.hostname+" streamed for "+str(self.seconds_recorded//60)+" minutes "+str(self.seconds_recorded%60)+" seconds\n"
 
         print printout
-
-        self.device.tcpConnection.setblocking(False)
-        while True:
-            try:                
-                self.device.tcpConnection.recv(4096)
-            except:
-                self.device.tcpConnection.setblocking(True)
-                break

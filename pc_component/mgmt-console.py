@@ -59,7 +59,7 @@ while(True):
             streamer.continue_recording = False
 
         deviceMan.sendCommand("stop")
-        print "Stopping......"
+        print "Stopping......\n"
         for streamer in streamerList:
             streamer.join()
 

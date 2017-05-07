@@ -19,6 +19,7 @@
 #include "../matrix-hal/cpp/driver/everloop_image.h"
 #include "../matrix-hal/cpp/driver/microphone_array.h"
 #include "../matrix-hal/cpp/driver/wishbone_bus.h"
+#include "sine_wave_simulator.h"
 
 #include "sharedResources.h"
 
@@ -200,7 +201,7 @@ inline int32_t syncTime() {
 	tcpConnection->rcv(&currentEpochTime, 4);
 	char command[25];
 	sprintf(command, "sudo date -s @%d", currentEpochTime);
-	cout << "Sys time synced with remote PC: " << flush;;
+	cout << "Sys time synced with remote PC: " << flush;
 	return system(command);
 }
 
@@ -390,6 +391,7 @@ void *record2Disk(void* null) {
 		ostringstream filenameStream;
 		filenameStream << "/home/pi/Recordings/" << hostname << "_" << dateAndTime << "_8ch.wav";
 		string filename = filenameStream.str();
+		cout << filename << endl;
 
 		ofstream file(filename, std::ofstream::binary);
 

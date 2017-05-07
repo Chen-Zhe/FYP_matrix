@@ -2,22 +2,20 @@
 #include<iostream>
 #include<cmath>
 #include<unistd.h>
+using namespace std;
+
 #define PI 3.14159265
 class MicrophoneArray {
 public:
-	uint32_t count;
 	int16_t gain_ = 0;
 
-	MicrophoneArray() {
-		count = 0;
-	};
+	MicrophoneArray() {};
 
 	~MicrophoneArray() {};
 
 	void Read() {
-		cout << count << endl;
-		count++;
-		usleep(8000);
+		usleep(8000);//normal recording
+		//usleep(100);//stress testing
 	};
 	void SetGain(int16_t gain) { gain_ = gain; }
 	uint16_t Channels() { return 8; }
@@ -29,10 +27,7 @@ public:
 	}
 
 	int16_t At(int16_t sample, int16_t channel) {
-		if (count > 125 && count<300)
-			return sin(sample * 3.14159265 / 6.4) * 8000;
-		else
-			return 0;
+		return sin(sample * PI / 6.4) * 8000;
 	}
 
 };

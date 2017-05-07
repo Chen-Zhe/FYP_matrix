@@ -47,8 +47,9 @@ class deviceManager():
 
     def tabulateDevice(self):
         if self.numDevices>0:
-            print "\nHostname\tIP\t\tStatus"
-            print "--------\t--\t\t------"
+            num = 1
+            print "\n#\tHostname\tIP\t\tStatus"
+            print "-\t--------\t--\t\t------"
             for pimatrix in self.deviceList:
                 status = ""
                 if pimatrix.status == "I":
@@ -58,7 +59,8 @@ class deviceManager():
                 elif pimatrix.status == "S":
                     status = "LVCSR"
 
-                print pimatrix.hostname+"\t"+pimatrix.ip+"\t"+status
+                print str(num)+".\t"+pimatrix.hostname+"\t"+pimatrix.ip+"\t"+status
+                num+=1
         else:
             print "No devices found"
         

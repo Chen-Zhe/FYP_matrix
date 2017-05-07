@@ -10,7 +10,8 @@ class RecordingStream(threading.Thread):
         self.dateAndTime = dateAndTime
 
     def run(self):
-        print "Receiving from "+self.device.hostname+"..."
+        printout = "Receiving from "+self.device.hostname+"...\n"
+        print printout
         filename = "Recordings/"+self.device.hostname+"_"+self.dateAndTime+"_8ch.wav"
         out_sound = wave.open(filename, 'wb')
         # (num of channels, sampling width in bytes, sampling rate, num of frames, compression type, compression name)
@@ -42,4 +43,14 @@ class RecordingStream(threading.Thread):
 
         out_sound.close()
 
-        print self.device.hostname+" streamed for "+str(self.seconds_recorded//60)+" minutes "+str(self.seconds_recorded%60), "seconds"
+        printout = self.device.hostname+" streamed for "+str(self.seconds_recorded//60)+" minutes "+str(self.seconds_recorded%60)+" seconds\n"
+
+        print printout
+
+        self.device.tcpConnection.setblocking(False)
+        while True:
+            try:                
+                self.device.tcpConnection.recv(4096)
+            except:
+                self.device.tcpConnection.setblocking(True)
+                break

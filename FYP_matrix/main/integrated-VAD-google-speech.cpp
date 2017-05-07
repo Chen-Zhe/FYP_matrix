@@ -132,7 +132,7 @@ void *run(void *null) {
 	mq_close(toVad);
 	pthread_join(VAD, NULL);
 	pthread_join(googleSpeech, NULL);
-	cout << "------ Google Speech stoped ------" << endl;
+	cout << "------ Google Speech stopped ------" << endl;
 	pthread_exit(NULL);
 }
 
